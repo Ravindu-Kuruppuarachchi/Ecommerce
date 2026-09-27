@@ -47,7 +47,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       { kind: "text", name: "text", label: "Message", maxLength: 120 },
       { kind: "url", name: "link", label: "Link" },
     ],
-    defaults: { text: "Island-wide delivery on orders over Rs 5,000", link: "" },
+    defaults: { text: "Order online and pay cash on delivery", link: "" },
   },
   hero: {
     type: "hero",
@@ -62,8 +62,8 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       { kind: "select", name: "height", label: "Height", options: ["compact", "medium", "full"] },
     ],
     defaults: {
-      heading: "New season, new arrivals",
-      subheading: "Discover pieces picked for the way you live.",
+      heading: "Shop our latest products",
+      subheading: "Browse what's in stock and pay cash when your order arrives.",
       image: "",
       ctaLabel: "Shop now",
       ctaLink: "/products",
@@ -203,7 +203,7 @@ function validateField(field: FieldDefinition, value: unknown, path: string, err
           errors.push(`${path}[${i}] must be an object`);
           return;
         }
-        for (const sub of field.fields) validateField(sub, (item as Record<string, unknown>)[sub.name], `${path}[${i}].${sub.name}`, errors);
+        for (const sub of field.fields) validateField(sub, (item as Record<string, unknown>)[sub.name], `${path} item ${i + 1}, ${sub.label}`, errors);
       });
       return;
   }
@@ -237,11 +237,40 @@ export function validateSections(input: unknown): { ok: true; sections: Section[
     const clean: Record<string, unknown> = {};
     for (const field of def.fields) {
       const value = (props as Record<string, unknown>)[field.name];
-      validateField(field, value, `sections[${i}].${field.name}`, errors);
+      // Messages name the section and field as the merchant sees them in the editor.
+      validateField(field, value, `${def.label} (section ${i + 1}), ${field.label}`, errors);
       if (value !== undefined) clean[field.name] = value;
     }
     sections.push({ id: s.id, type: s.type, props: clean });
   });
 
   return errors.length ? { ok: false, errors } : { ok: true, sections };
+}
+
+/** A product list a section needs from the catalog. */
+export interface ProductQuery {
+  key: string;
+  category?: string;
+  limit: number;
+}
+
+/**
+ * Product lists the given sections need, deduplicated. Renderers fetch these
+ * once per page and look results up by section via productQueryKey.
+ */
+export function productQueries(sections: Section[]): ProductQuery[] {
+  const byKey = new Map<string, ProductQuery>();
+  for (const section of sections) {
+    const query = productQueryFor(section);
+    if (query) byKey.set(query.key, query);
+  }
+  return [...byKey.values()];
+}
+
+export function productQueryFor(section: Section): ProductQuery | null {
+  if (section.type !== "featured-products") return null;
+  const props = { ...SECTIONS["featured-products"].defaults, ...section.props };
+  const limit = typeof props.limit === "number" ? props.limit : 8;
+  const category = props.source === "category" && typeof props.category === "string" ? props.category.trim() : "";
+  return category ? { key: `category:${category}:${limit}`, category, limit } : { key: `newest:${limit}`, limit };
 }

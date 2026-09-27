@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@repo/core": "workspace:*",
     "axios": "^1.6.5",
     "next": "^14.0.4",

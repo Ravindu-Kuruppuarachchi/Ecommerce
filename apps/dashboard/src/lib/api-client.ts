@@ -55,8 +55,47 @@ export const storeApi = {
   getMe: () => apiClient.get("/stores/me"),
   update: (data: any) => apiClient.patch("/stores/me", data),
   updateTheme: (data: any) => apiClient.patch("/stores/me/theme", data),
-  getBySlug: (slug: string) => apiClient.get(`/stores/${slug}`)
+  getBySlug: (slug: string) => apiClient.get(`/stores/${slug}`),
+  applyTemplate: (key: string, replacePages: boolean) => apiClient.post("/stores/me/template", { key, replacePages }),
+  modules: () => apiClient.get("/stores/me/modules"),
+  setModule: (key: string, enabled: boolean) => apiClient.put(`/stores/me/modules/${key}`, { enabled })
 };
+
+// Storefront pages (section builder)
+const pagePath = (slug: string) => `/stores/me/pages/${encodeURIComponent(slug)}`;
+export const pageApi = {
+  list: () => apiClient.get("/stores/me/pages"),
+  get: (slug: string) => apiClient.get(pagePath(slug)),
+  create: (title: string) => apiClient.post("/stores/me/pages", { title }),
+  saveDraft: (slug: string, data: { title?: string; sections: unknown[] }) => apiClient.put(pagePath(slug), data),
+  publish: (slug: string) => apiClient.post(`${pagePath(slug)}/publish`),
+  delete: (slug: string) => apiClient.delete(pagePath(slug))
+};
+
+export const templateApi = {
+  list: () => apiClient.get("/templates")
+};
+
+export const customerApi = {
+  list: () => apiClient.get("/customers")
+};
+
+export const payoutApi = {
+  balance: () => apiClient.get("/payouts/balance")
+};
+
+/** Uploads one image file and resolves to its public URL. */
+export async function uploadImage(file: File): Promise<string> {
+  const res = await apiClient.post("/uploads", file, { headers: { "Content-Type": file.type || "application/octet-stream" } });
+  return res.data.url;
+}
+
+/** Best human-readable message from an API error. */
+export function errorMessage(err: any, fallback = "Something went wrong"): string {
+  const data = err?.response?.data;
+  const detail = data?.details?.[0];
+  return (typeof detail === "string" ? detail : detail?.message) ?? data?.error ?? fallback;
+}
 
 // Dashboard API
 export const dashboardApi = {

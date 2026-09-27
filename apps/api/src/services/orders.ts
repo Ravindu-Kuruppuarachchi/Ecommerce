@@ -42,6 +42,7 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
   return prisma.$transaction(async (tx) => {
     const store = await tx.store.findUnique({ where: { slug: storeSlug } });
     if (!store || store.status === "suspended") throw new HttpError(404, "Store not found");
+    if (store.status !== "live") throw new HttpError(409, "This store isn't taking orders yet");
 
     const products = await tx.product.findMany({
       where: { id: { in: [...quantities.keys()] }, storeId: store.id, status: "active" },

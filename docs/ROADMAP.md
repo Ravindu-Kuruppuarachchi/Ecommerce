@@ -44,13 +44,21 @@ There's no Stripe Connect-style automatic split, so the platform collects and se
 - COD checkout end to end, with the fee posted to the ledger when the merchant marks cash received.
 - Three templates (Classic, Boutique, Bazaar) and 8 section types defined in `@repo/core`.
 
-### Phase 1: Store builder (next)
-- Storefront renders the home page and custom pages from published sections, with one React component per section type; replaces the hard-coded `[store]/page.tsx`.
-- Dashboard "Online store" area: template gallery with previews, section editor (add, reorder, edit fields generated from the section definitions, live preview iframe), publish button, theme colours and fonts.
-- Image uploads (S3-compatible storage, e.g. Cloudflare R2) instead of pasted URLs.
-- Onboarding flow: sign up → pick template → add first product → go live.
-- Admin nav driven by `GET /api/stores/me/modules` and a module picker page.
-- Fix the dashboard auth hydration race: a hard reload on any page redirects to /login.
+### ✅ Phase 1: Store builder (done)
+- Storefront rebuilt around published sections: home, custom pages (`/pages/<slug>`), catalog with category filters, product pages, checkout. Server-rendered, with a 5-second cache.
+- Store theme becomes CSS variables (colours, fonts, header style); button text colour is picked automatically for contrast. Fonts are self-hosted (Fontsource), so builds don't depend on Google Fonts.
+- Dashboard "Online store": pages list (add, edit, delete), theme editor with a contrast warning, template gallery (switch theme, optionally replace pages).
+- Page editor: add, reorder, duplicate and remove sections; forms generated from the section definitions; image upload; live preview in an iframe (desktop and mobile sizes, click a section to edit it); save a draft, then publish.
+- Image uploads (`POST /api/uploads`): PNG, JPEG, WebP and GIF, checked by content, 5 MB limit. Stored on local disk for now.
+- Onboarding: template picked at signup, launch checklist on Home, stores start as drafts and can't take orders until the merchant opens them.
+- Admin menu built from enabled modules; Features page to switch optional modules; Customers and Payouts pages.
+- Newsletter signups stored per store.
+- Fixed: a hard refresh no longer logs merchants out.
+
+Carried forward:
+- Move uploads to S3-compatible storage (Cloudflare R2) before running more than one API instance.
+- Product form still takes image URLs; add the upload button there too.
+- Section defaults include placeholder copy ("Tell customers who you are…") that goes live if a merchant publishes without editing.
 
 ### Phase 2: Payments
 - PayHere checkout for cards: create the payment, redirect, verify `notify_url` with the md5 signature, store the raw event in `PaymentEvent`, then call `recordOrderPaid`.

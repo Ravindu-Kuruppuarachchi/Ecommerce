@@ -1,69 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
 import { formatMoney } from "@repo/core";
-
-// ============ SIDEBAR NAVIGATION ============
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/products", label: "Products", icon: "📦" },
-  { href: "/products/new", label: "Add Product", icon: "➕" },
-  { href: "/orders", label: "Orders", icon: "🛒" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
-];
-
-function Sidebar({
-  storeName,
-  onLogout,
-}: {
-  storeName: string;
-  onLogout: () => void;
-}) {
-  const pathname = usePathname();
-
-  return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-40">
-      {/* Brand */}
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
-          ShopHub
-        </h1>
-        <p className="text-xs text-gray-500 mt-0.5 truncate">{storeName}</p>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`sidebar-link ${
-              pathname === item.href ? "active" : "text-gray-600"
-            }`}
-          >
-            <span className="text-lg">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-gray-100">
-        <button
-          onClick={onLogout}
-          className="sidebar-link text-red-600 hover:bg-red-50 w-full"
-        >
-          <span className="text-lg">🚪</span>
-          Logout
-        </button>
-      </div>
-    </aside>
-  );
-}
+import LaunchChecklist from "@/components/LaunchChecklist";
+import { storefrontUrl } from "@/lib/urls";
 
 // ============ STAT CARD ============
 
@@ -107,7 +50,7 @@ interface Order {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, store, token, logout } = useAuthStore();
+  const { user, store, token } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -153,11 +96,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
   if (!user || !store) {
     return null;
   }
@@ -184,32 +122,26 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar storeName={store.name} onLogout={handleLogout} />
-
-      {/* Main content area — offset by sidebar width */}
-      <main className="ml-64">
+    <div>
+      <main>
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200">
-          <div className="px-8 py-4 flex justify-between items-center">
+          <div className="px-4 sm:px-8 py-4 flex justify-between items-center gap-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Dashboard</h2>
               <p className="text-sm text-gray-500">
                 Welcome back, {user.firstName || user.email}
               </p>
             </div>
-            <a
-              href={`http://localhost:3001?store=${store.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary text-xs"
-            >
-              🌐 View Storefront
+            <a href={storefrontUrl(store.slug)} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">
+              View store
             </a>
           </div>
         </header>
 
-        <div className="px-8 py-8">
+        <div className="px-4 sm:px-8 py-8">
+          <LaunchChecklist />
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
             <StatCard
@@ -249,10 +181,10 @@ export default function DashboardPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               <Link href="/products/new" className="btn-primary">
-                ➕ Add Product
+                Add product
               </Link>
-              <Link href="/settings" className="btn-secondary">
-                ⚙️ Store Settings
+              <Link href="/store/pages/home" className="btn-secondary">
+                Edit home page
               </Link>
             </div>
           </div>

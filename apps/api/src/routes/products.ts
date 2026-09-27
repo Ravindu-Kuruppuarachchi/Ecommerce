@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { toMinor } from "@repo/core";
+import { env } from "../lib/env";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { merchant } from "../middleware/auth";
@@ -22,7 +23,11 @@ const price = z
   });
 
 const imageSchema = z.object({
-  url: z.string().url().refine((u) => u.startsWith("https://"), "Images must use https"),
+  // Plain http is only allowed in development, where uploads are served from localhost.
+  url: z
+    .string()
+    .url()
+    .refine((u) => u.startsWith("https://") || (!env.isProduction && u.startsWith("http://")), "Images must use https"),
   alt: z.string().max(200).optional(),
 });
 

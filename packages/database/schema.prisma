@@ -61,6 +61,7 @@ model Store {
   ledger        LedgerEntry[]
   payouts       Payout[]
   payoutAccount PayoutAccount?
+  subscribers   NewsletterSubscriber[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -365,4 +366,17 @@ model PayoutAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============ MARKETING ============
+
+model NewsletterSubscriber {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  email   String
+
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, email])
 }

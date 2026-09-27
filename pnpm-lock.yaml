@@ -85,6 +85,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@repo/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -125,6 +128,27 @@ importers:
 
   apps/storefront:
     dependencies:
+      '@fontsource-variable/cormorant-garamond':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/dm-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/manrope':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/outfit':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/playfair-display':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@repo/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -175,6 +199,9 @@ importers:
         specifier: ^2.4.3
         version: 2.4.3
     devDependencies:
+      prisma:
+        specifier: ^5.22.0
+        version: 5.22.0
       tsx:
         specifier: ^4.23.0
         version: 4.23.0
@@ -341,6 +368,24 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@fontsource-variable/cormorant-garamond@5.3.0':
+    resolution: {integrity: sha512-rgZJ/5w3hi60swAPnrOXpZf5wEH6NTrvm4H8D9Y4b1QIFUqlX14eM3QTMU/eAznjfh0eXpO1QUqsFhiy58aoMg==}
+
+  '@fontsource-variable/dm-sans@5.3.0':
+    resolution: {integrity: sha512-BpUG5bqePiDFMBM4ZtLSlPdAIOM990uB1dlXzIf4aw21yQR7BmykedLXXXMqGWsR18aMLOsbWccwJNh3ztTQaA==}
+
+  '@fontsource-variable/inter@5.3.0':
+    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
+
+  '@fontsource-variable/manrope@5.3.0':
+    resolution: {integrity: sha512-6D5dgokHsWDDMtmXHznKa0hK229NN+1a4BLPmUCLqcO1Pw5EEhWY5RFt0AcXnVRAljFFPfRtLkJePQj6LSsV6g==}
+
+  '@fontsource-variable/outfit@5.3.0':
+    resolution: {integrity: sha512-fPb5XnYK0k7SbR++HEmm4+ZqDszmLKQ+sPRUr8oQ/KNC0vy6r6hazJFe8iYozv4cqlHbvJ/JECkJWrfDodUMVQ==}
+
+  '@fontsource-variable/playfair-display@5.3.0':
+    resolution: {integrity: sha512-IHdzTvE8eGIXHteZql7KXoqdc3Gfm+Zs1u4XlSC3MeplkwviT3sx/P6gI0tLwg/xIYLF4ZJYveZ5V+bl9cnDwA==}
+
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -426,6 +471,13 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@phosphor-icons/react@2.1.10':
+    resolution: {integrity: sha512-vt8Tvq8GLjheAZZYa+YG/pW7HDbov8El/MANW8pOAz4eGxrwhnbfrQZq0Cp4q8zBEu8NIhHdnr+r8thnfRSNYA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>= 16.8'
+      react-dom: '>= 16.8'
 
   '@prisma/client@5.22.0':
     resolution: {integrity: sha512-M0SVXfyHnQREBKxCgyo7sffrKttwE6R8PMq330MIUF0pTwjUhLbW84pFDlf06B27XyCR++VtjugEnIHdr07SVA==}
@@ -1427,6 +1479,18 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
+  '@fontsource-variable/cormorant-garamond@5.3.0': {}
+
+  '@fontsource-variable/dm-sans@5.3.0': {}
+
+  '@fontsource-variable/inter@5.3.0': {}
+
+  '@fontsource-variable/manrope@5.3.0': {}
+
+  '@fontsource-variable/outfit@5.3.0': {}
+
+  '@fontsource-variable/playfair-display@5.3.0': {}
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -1481,6 +1545,11 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
+
+  '@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@prisma/client@5.22.0(prisma@5.22.0)':
     optionalDependencies:

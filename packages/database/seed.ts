@@ -1,6 +1,6 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { computeOrderTotals, TEMPLATES } from "@repo/core";
+import { computeOrderTotals, TEMPLATES, type Section } from "@repo/core";
 
 const prisma = new PrismaClient();
 
@@ -13,11 +13,47 @@ const products = [
     description: "Smooth espresso with steamed milk and a thin layer of foam." },
   { name: "Iced Coffee", category: "Iced", price: 900_00, quantity: 60, image: "photo-1517701550927-30cf4ba1dba5",
     description: "Cold-brewed for 20 hours and served over ice." },
-  { name: "Chocolate Croissant", category: "Pastry", price: 750_00, quantity: 30, image: "photo-1555507036-ab1f4038024a",
+  { name: "Chocolate Croissant", category: "Pastry", price: 750_00, quantity: 30, image: "photo-1530610476181-d83430b64dcd",
     description: "Flaky butter croissant filled with dark chocolate, baked every morning." },
   { name: "Mocha", category: "Coffee", price: 1_150_00, quantity: 35, image: "photo-1578314675249-a6910f80cc4e",
     description: "Espresso, chocolate and steamed milk, topped with cream." },
 ];
+
+const photo = (id: string, w = 1600, h = 1000) => `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop`;
+
+/** Gives the demo store's template pages real copy and photography. */
+function customize(pageSlug: string, sections: Section[]): Section[] {
+  const overrides: Record<string, Record<string, unknown>> = {
+    hero: {
+      heading: "Coffee from the hills, roasted this week",
+      subheading: "Single-origin beans from Kandy and Nuwara Eliya, roasted in small batches in Colombo.",
+      image: photo("photo-1447933601403-0c6688de566e"),
+      ctaLabel: "Shop coffee",
+    },
+    collections: {
+      heading: "Shop by category",
+      items: [
+        { label: "Coffee", category: "Coffee", image: photo("photo-1495474472287-4d71bcdd2085", 800, 1000) },
+        { label: "Iced", category: "Iced", image: photo("photo-1517701550927-30cf4ba1dba5", 800, 1000) },
+        { label: "Pastry", category: "Pastry", image: photo("photo-1530610476181-d83430b64dcd", 800, 1000) },
+      ],
+    },
+    featured: { heading: "This week's roasts" },
+    testimonials: {
+      items: [
+        { quote: "The Kandy roast is the best cup I've had outside the estate itself.", author: "Dilini Jayawardena, Colombo 7" },
+        { quote: "Ordered on Monday, delivered to Galle on Wednesday. Beautifully packed.", author: "Ruwan Senanayake, Galle" },
+      ],
+    },
+    story: {
+      heading: "Grown at 1,800 metres",
+      body: "We buy directly from three smallholder estates and roast within days of each harvest reaching Colombo.",
+      image: photo("photo-1442512595331-e89e73853f31", 1200, 1200),
+    },
+  };
+  if (pageSlug !== "home" && pageSlug !== "about") return sections;
+  return sections.map((s) => (overrides[s.id] ? { ...s, props: { ...s.props, ...overrides[s.id] } } : s));
+}
 
 async function main() {
   console.log("Seeding database...");
@@ -28,6 +64,7 @@ async function main() {
   await prisma.paymentEvent.deleteMany();
   await prisma.order.deleteMany();
   await prisma.customer.deleteMany();
+  await prisma.newsletterSubscriber.deleteMany();
   await prisma.store.deleteMany();
   await prisma.user.deleteMany();
 
@@ -53,7 +90,7 @@ async function main() {
       theme: { create: template.theme },
       pages: {
         create: template.pages.map((page) => {
-          const sections = page.sections as unknown as Prisma.InputJsonValue;
+          const sections = customize(page.slug, page.sections) as unknown as Prisma.InputJsonValue;
           return { slug: page.slug, title: page.title, draftSections: sections, publishedSections: sections, publishedAt: new Date() };
         }),
       },

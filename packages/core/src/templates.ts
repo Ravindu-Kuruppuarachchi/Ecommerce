@@ -3,6 +3,7 @@
 // which the merchant owns and edits their copy.
 
 import { createSection, type Section } from "./sections";
+import type { FontName, HeaderStyle } from "./theme";
 
 export type TemplateKey = "classic" | "boutique" | "bazaar";
 
@@ -10,8 +11,8 @@ export interface ThemeTokens {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
-  fontFamily: string;
-  headerStyle: "minimal" | "standard" | "premium";
+  fontFamily: FontName;
+  headerStyle: HeaderStyle;
 }
 
 export interface TemplatePage {
@@ -39,7 +40,7 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Classic",
     description: "Clean layout with a bold hero and a straightforward product grid.",
     bestFor: "General stores and first-time sellers",
-    theme: { primaryColor: "#111827", secondaryColor: "#ffffff", accentColor: "#2563eb", fontFamily: "Inter", headerStyle: "standard" },
+    theme: { primaryColor: "#18181b", secondaryColor: "#fafafa", accentColor: "#0f766e", fontFamily: "Manrope", headerStyle: "standard" },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
@@ -63,7 +64,7 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Boutique",
     description: "Editorial, image-led layout with generous spacing and a serif display face.",
     bestFor: "Fashion, jewellery, handmade and lifestyle brands",
-    theme: { primaryColor: "#3f3a36", secondaryColor: "#faf7f2", accentColor: "#a16207", fontFamily: "Playfair Display", headerStyle: "premium" },
+    theme: { primaryColor: "#1d2b24", secondaryColor: "#f4f5f2", accentColor: "#c2410c", fontFamily: "Playfair Display", headerStyle: "premium" },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
@@ -87,14 +88,14 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Bazaar",
     description: "Dense, promotion-friendly layout that puts lots of products on screen.",
     bestFor: "Electronics, groceries and large catalogs",
-    theme: { primaryColor: "#0f172a", secondaryColor: "#f8fafc", accentColor: "#ea580c", fontFamily: "Inter", headerStyle: "minimal" },
+    theme: { primaryColor: "#0f172a", secondaryColor: "#f8fafc", accentColor: "#1d4ed8", fontFamily: "DM Sans", headerStyle: "minimal" },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
         title: "Home",
         sections: [
           createSection("announcement", {}, "announcement"),
-          createSection("hero", { heading: "This week's deals", height: "compact" }, "hero"),
+          createSection("hero", { heading: "Everything in one place", height: "compact" }, "hero"),
           createSection("category-grid", { heading: "Shop by department" }, "departments"),
           createSection("featured-products", { heading: "Best sellers", limit: 12, columns: "4" }, "best-sellers"),
         ],

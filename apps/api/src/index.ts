@@ -4,10 +4,12 @@ import express, { type ErrorRequestHandler } from "express";
 import helmet from "helmet";
 import { HttpError } from "./lib/http";
 import { authRouter } from "./routes/auth";
+import { customersRouter } from "./routes/customers";
 import { financeRouter } from "./routes/finance";
 import { ordersRouter } from "./routes/orders";
 import { productsRouter } from "./routes/products";
 import { myStoreRouter, publicStoreRouter, templatesRouter } from "./routes/stores";
+import { uploadsRouter } from "./routes/uploads";
 
 const app = express();
 
@@ -22,6 +24,13 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 
+// Uploaded images are embedded by the storefront and dashboard on other origins.
+app.use(
+  "/uploads",
+  helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
+  express.static(env.uploadDir, { immutable: true, maxAge: "365d", index: false, dotfiles: "deny" }),
+);
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -32,6 +41,8 @@ app.use("/api/stores/me", myStoreRouter); // before /:slug; "me" is a reserved s
 app.use("/api/stores", publicStoreRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/customers", customersRouter);
+app.use("/api/uploads", uploadsRouter);
 app.use("/api", financeRouter);
 
 app.use((_req, res) => {
@@ -43,6 +54,7 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return res.status(err.status).json({ error: err.message, ...(err.details !== undefined && { details: err.details }) });
   }
   if (err?.type === "entity.parse.failed") return res.status(400).json({ error: "Malformed JSON" });
+  if (err?.type === "entity.too.large") return res.status(413).json({ error: "That file is too large" });
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
 };
