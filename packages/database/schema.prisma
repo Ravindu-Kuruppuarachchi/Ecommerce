@@ -1,0 +1,368 @@
+// Multi-tenant e-commerce platform schema.
+//
+// Conventions:
+// - Money columns end in "Cents" and hold integers in the currency's minor unit.
+// - Rates end in "Bps" (basis points): 1000 = 10%.
+// - Every merchant-owned row carries storeId; queries must always scope by it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ACCOUNTS & TENANCY ============
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      String   @default("merchant") // merchant, platform_admin
+  stores    Store[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Store {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  ownerId     String
+  owner       User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  description String?
+  logo        String?
+  favicon     String?
+  email       String?
+  phone       String?
+
+  status         String @default("draft") // draft, live, suspended
+  currency       String @default("LKR")
+  taxBps         Int    @default(0)
+  // The platform's commission on each order's goods subtotal.
+  platformFeeBps Int    @default(1000)
+
+  templateKey  String @default("classic")
+  // Per-store order sequence, so customers see #1001 rather than a cuid.
+  orderCounter Int    @default(1000)
+
+  theme         StoreTheme?
+  pages         StorePage[]
+  modules       StoreModule[]
+  domains       Domain[]
+  products      Product[]
+  orders        Order[]
+  customers     Customer[]
+  payments      Payment[]
+  ledger        LedgerEntry[]
+  payouts       Payout[]
+  payoutAccount PayoutAccount?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+// ============ STOREFRONT BUILDER ============
+
+model StoreTheme {
+  id      String @id @default(cuid())
+  storeId String @unique
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  primaryColor   String @default("#111827")
+  secondaryColor String @default("#ffffff")
+  accentColor    String @default("#2563eb")
+  fontFamily     String @default("Inter")
+  headerStyle    String @default("standard") // minimal, standard, premium
+  // Header/footer links and other template-wide settings.
+  settings       Json   @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A storefront page built from sections (see @repo/core sections.ts).
+// Merchants edit draftSections; publishing copies them to publishedSections,
+// which is the only version customers ever see.
+model StorePage {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  slug              String
+  title             String
+  draftSections     Json      @default("[]")
+  publishedSections Json?
+  publishedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, slug])
+}
+
+// Optional feature modules a store has switched on (see @repo/core modules.ts).
+// Core modules are always on and have no row.
+model StoreModule {
+  id      String  @id @default(cuid())
+  storeId String
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  key     String
+  enabled Boolean @default(true)
+  config  Json    @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, key])
+}
+
+// Custom domains. A domain serves the store only once ownership is verified
+// through the DNS TXT record and a certificate has been issued.
+model Domain {
+  id                String    @id @default(cuid())
+  storeId           String
+  store             Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  hostname          String    @unique // lowercase, no port, e.g. shop.example.lk
+  status            String    @default("pending") // pending, verified, active, failed
+  verificationToken String
+  isPrimary         Boolean   @default(false)
+  verifiedAt        DateTime?
+  lastCheckedAt     DateTime?
+  lastError         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+// ============ CATALOG ============
+
+model Product {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  name                String
+  slug                String
+  description         String?
+  status              String  @default("active") // draft, active, archived
+  priceCents          Int
+  compareAtPriceCents Int?
+  quantity            Int     @default(0)
+  category            String?
+  sku                 String?
+
+  images     ProductImage[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, slug])
+  @@index([storeId, status])
+  @@index([storeId, category])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  position  Int     @default(0)
+
+  @@index([productId])
+}
+
+// ============ CUSTOMERS & ORDERS ============
+
+model Customer {
+  id        String  @id @default(cuid())
+  storeId   String
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  email     String
+  firstName String?
+  lastName  String?
+  phone     String?
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, email])
+}
+
+model Order {
+  id          String @id @default(cuid())
+  storeId     String
+  store       Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderNumber Int
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  status            String @default("pending") // pending, confirmed, cancelled, completed
+  paymentStatus     String @default("unpaid") // unpaid, paid, partially_refunded, refunded, failed
+  paymentMethod     String // card, cod, bank_transfer
+  fulfillmentStatus String @default("unfulfilled") // unfulfilled, packed, shipped, delivered, returned
+
+  currency         String
+  subtotalCents    Int
+  taxCents         Int    @default(0)
+  shippingCents    Int    @default(0)
+  totalCents       Int
+  // Fee rate and amount are frozen at checkout so later rate changes don't rewrite history.
+  platformFeeBps   Int
+  platformFeeCents Int
+  merchantNetCents Int
+
+  items           OrderItem[]
+  shippingAddress ShippingAddress?
+  payments        Payment[]
+  ledger          LedgerEntry[]
+  notes           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, orderNumber])
+  @@index([storeId, createdAt])
+  @@index([storeId, status])
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Nullable so deleting a product never breaks past orders; name/sku/price are snapshots.
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName    String
+  sku            String?
+  unitPriceCents Int
+  quantity       Int
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model ShippingAddress {
+  id         String  @id @default(cuid())
+  orderId    String  @unique
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name       String
+  email      String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  district   String?
+  postalCode String?
+  country    String  @default("LK")
+}
+
+// ============ PAYMENTS & MONEY MOVEMENT ============
+
+// One attempt to collect money for an order through a provider.
+model Payment {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider    String // payhere, cod, bank_transfer
+  providerRef String? // the provider's payment id
+  amountCents Int
+  currency    String
+  status      String  @default("pending") // pending, succeeded, failed, refunded
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerRef])
+  @@index([orderId])
+  @@index([storeId])
+}
+
+// Raw provider notifications, stored before processing so every event is
+// handled exactly once and can be replayed.
+model PaymentEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventKey    String // provider-unique id for idempotency
+  payload     Json
+  verified    Boolean
+  processedAt DateTime?
+  error       String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, eventKey])
+}
+
+// Append-only record of what the platform owes each merchant. A merchant's
+// balance is the sum of amountCents; positive means the platform owes them.
+//
+// Card order paid:  +totalCents (sale), -platformFeeCents (platform_fee)
+// COD order paid:   -platformFeeCents only, since the merchant already holds the cash
+// Payout sent:      -amountCents (payout)
+model LedgerEntry {
+  id          String  @id @default(cuid())
+  storeId     String
+  store       Store   @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  orderId     String?
+  order       Order?  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payoutId    String?
+  payout      Payout? @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  type        String // sale, platform_fee, refund, fee_reversal, payout, adjustment
+  amountCents Int
+  currency    String
+  memo        String?
+  // Idempotency key such as "order:<id>:sale", so retried webhooks can't post twice.
+  key         String  @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([orderId])
+}
+
+model Payout {
+  id          String        @id @default(cuid())
+  storeId     String
+  store       Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  amountCents Int
+  currency    String
+  status      String        @default("pending") // pending, paid, failed
+  reference   String? // bank transfer reference
+  paidAt      DateTime?
+  entries     LedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+model PayoutAccount {
+  id            String @id @default(cuid())
+  storeId       String @unique
+  store         Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  accountName   String
+  bankName      String
+  branch        String
+  accountNumber String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

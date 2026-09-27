@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local secrets; copy the matching .env.example
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+*.log
+.playwright-cli/
