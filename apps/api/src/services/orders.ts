@@ -1,6 +1,8 @@
 import { Prisma, type Order } from "@prisma/client";
 import { computeOrderTotals } from "@repo/core";
 import { HttpError } from "../lib/http";
+import { changeStock } from "./inventory";
+import { quote } from "./pricing";
 import { prisma } from "../lib/prisma";
 
 export const PAYMENT_METHODS = ["cod"] as const; // "card" arrives with the PayHere integration
@@ -9,7 +11,8 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export interface CheckoutInput {
   email: string;
   paymentMethod: PaymentMethod;
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{ productId: string; variantId?: string; quantity: number }>;
+  discountCode?: string;
   shippingAddress: {
     name: string;
     phone: string;
@@ -29,15 +32,23 @@ export const orderInclude = {
   payments: true,
 } satisfies Prisma.OrderInclude;
 
+const lineKey = (productId: string, variantId?: string | null) => `${productId}:${variantId ?? ""}`;
+
 /**
- * Places an order from the storefront. Prices always come from the database,
- * never from the client, and stock is reserved in the same transaction so two
- * customers can't buy the last unit.
+ * Places an order from the storefront. Prices, delivery and discounts are
+ * always worked out here from the database, never taken from the client, and
+ * stock is reserved in the same transaction so two customers can't buy the
+ * last unit.
  */
 export async function placeOrder(storeSlug: string, input: CheckoutInput) {
-  // Merge repeated lines for the same product.
-  const quantities = new Map<string, number>();
-  for (const item of input.items) quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity);
+  // Merge repeated lines for the same product and variant.
+  const quantities = new Map<string, { productId: string; variantId?: string; quantity: number }>();
+  for (const item of input.items) {
+    const key = lineKey(item.productId, item.variantId);
+    const existing = quantities.get(key);
+    quantities.set(key, { ...item, quantity: (existing?.quantity ?? 0) + item.quantity });
+  }
+  const lines = [...quantities.values()];
 
   return prisma.$transaction(async (tx) => {
     const store = await tx.store.findUnique({ where: { slug: storeSlug } });
@@ -45,23 +56,58 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
     if (store.status !== "live") throw new HttpError(409, "This store isn't taking orders yet");
 
     const products = await tx.product.findMany({
-      where: { id: { in: [...quantities.keys()] }, storeId: store.id, status: "active" },
+      where: { id: { in: lines.map((l) => l.productId) }, storeId: store.id, status: "active" },
+      include: { variants: true },
     });
-    if (products.length !== quantities.size) throw new HttpError(400, "Some items are no longer available");
+    const byId = new Map(products.map((p) => [p.id, p]));
 
-    for (const product of products) {
-      const quantity = quantities.get(product.id)!;
-      const reserved = await tx.product.updateMany({
-        where: { id: product.id, quantity: { gte: quantity } },
-        data: { quantity: { decrement: quantity } },
+    const priced = lines.map((line) => {
+      const product = byId.get(line.productId);
+      if (!product) throw new HttpError(400, "Some items are no longer available");
+      if (product.variants.length > 0) {
+        // Products with variants must be bought as a specific variant.
+        const variant = product.variants.find((v) => v.id === line.variantId);
+        if (!variant) throw new HttpError(400, `Choose an option for "${product.name}"`);
+        return { ...line, product, variant, unitPrice: variant.priceCents ?? product.priceCents, name: product.name, sku: variant.sku ?? product.sku };
+      }
+      if (line.variantId) throw new HttpError(400, "Some items are no longer available");
+      return { ...line, product, variant: null, unitPrice: product.priceCents, name: product.name, sku: product.sku };
+    });
+
+    for (const line of priced) {
+      const label = line.variant ? `${line.name} (${line.variant.title})` : line.name;
+      const available = line.variant?.quantity ?? line.product.quantity;
+      try {
+        await changeStock(tx, { storeId: store.id, productId: line.productId, variantId: line.variant?.id, change: -line.quantity, reason: "order" });
+      } catch {
+        throw new HttpError(409, available > 0 ? `Only ${available} of "${label}" left in stock` : `"${label}" is sold out`);
+      }
+    }
+
+    const subtotalCents = priced.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+    const pricing = await quote(tx, store.id, {
+      subtotalCents,
+      district: input.shippingAddress.district,
+      code: input.discountCode,
+    });
+
+    if (pricing.discount) {
+      // Conditional increment: if another checkout used the last redemption first, this matches nothing.
+      const claimed = await tx.discount.updateMany({
+        where: {
+          id: pricing.discount.id,
+          ...(pricing.discount.usageLimit !== null && { usedCount: { lt: pricing.discount.usageLimit } }),
+        },
+        data: { usedCount: { increment: 1 } },
       });
-      if (reserved.count === 0) throw new HttpError(409, `Only ${product.quantity} of "${product.name}" left in stock`);
+      if (claimed.count === 0) throw new HttpError(409, "This code has been fully used");
     }
 
     const totals = computeOrderTotals({
-      lines: products.map((p) => ({ unitPrice: p.priceCents, quantity: quantities.get(p.id)! })),
+      lines: priced.map((l) => ({ unitPrice: l.unitPrice, quantity: l.quantity })),
       taxBps: store.taxBps,
-      shipping: 0, // set by the shipping module once delivery zones exist
+      shipping: pricing.shipping,
+      discount: pricing.discountCents,
       platformFeeBps: store.platformFeeBps,
     });
 
@@ -86,20 +132,27 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
         paymentMethod: input.paymentMethod,
         currency: store.currency,
         subtotalCents: totals.subtotal,
+        discountCents: totals.discount,
         taxCents: totals.tax,
         shippingCents: totals.shipping,
         totalCents: totals.total,
         platformFeeBps: store.platformFeeBps,
         platformFeeCents: totals.platformFee,
         merchantNetCents: totals.merchantNet,
+        discountId: pricing.discount?.id,
+        discountCode: pricing.discount?.code,
+        discountTitle: pricing.discount?.title,
+        shippingZoneName: pricing.zone?.name,
         notes: input.notes,
         items: {
-          create: products.map((p) => ({
-            productId: p.id,
-            productName: p.name,
-            sku: p.sku,
-            unitPriceCents: p.priceCents,
-            quantity: quantities.get(p.id)!,
+          create: priced.map((l) => ({
+            productId: l.productId,
+            productName: l.name,
+            variantId: l.variant?.id,
+            variantTitle: l.variant?.title,
+            sku: l.sku,
+            unitPriceCents: l.unitPrice,
+            quantity: l.quantity,
           })),
         },
         shippingAddress: { create: { ...input.shippingAddress, email } },
@@ -162,7 +215,7 @@ export const FULFILLMENT_STATUSES = ["unfulfilled", "packed", "shipped", "delive
 export async function updateOrderStatus(
   storeId: string,
   orderId: string,
-  change: { status?: string; fulfillmentStatus?: (typeof FULFILLMENT_STATUSES)[number] },
+  change: { status?: string; fulfillmentStatus?: (typeof FULFILLMENT_STATUSES)[number]; courier?: string | null; trackingNumber?: string | null },
 ) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({ where: { id: orderId, storeId }, include: { items: true } });
@@ -174,11 +227,15 @@ export async function updateOrderStatus(
       }
       if (change.status === "cancelled") {
         if (order.paymentStatus === "paid") throw new HttpError(409, "Paid orders need a refund, which isn't supported yet");
-        // Put reserved stock back; skip lines whose product has since been deleted.
+        // Put reserved stock back; skip lines whose product or variant has since been deleted.
         for (const item of order.items) {
-          if (item.productId) {
-            await tx.product.updateMany({ where: { id: item.productId }, data: { quantity: { increment: item.quantity } } });
-          }
+          if (!item.productId) continue;
+          const variantGone = item.variantTitle !== null && item.variantId === null;
+          if (variantGone) continue;
+          await changeStock(tx, { storeId, productId: item.productId, variantId: item.variantId, change: item.quantity, reason: "cancellation", note: `Order #${order.orderNumber}` }).catch(() => undefined);
+        }
+        if (order.discountId) {
+          await tx.discount.updateMany({ where: { id: order.discountId, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });
         }
         await tx.payment.updateMany({ where: { orderId: order.id, status: "pending" }, data: { status: "failed" } });
       }
@@ -187,7 +244,12 @@ export async function updateOrderStatus(
 
     return tx.order.update({
       where: { id: order.id },
-      data: { status: change.status, fulfillmentStatus: change.fulfillmentStatus },
+      data: {
+        status: change.status,
+        fulfillmentStatus: change.fulfillmentStatus,
+        courier: change.courier,
+        trackingNumber: change.trackingNumber,
+      },
       include: orderInclude,
     });
   });

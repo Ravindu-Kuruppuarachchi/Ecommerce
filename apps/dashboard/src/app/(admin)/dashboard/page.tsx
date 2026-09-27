@@ -174,6 +174,15 @@ export default function DashboardPage() {
             />
           </div>
 
+          {stats.lowStock > 0 && (
+            <Link href="/inventory" className="-mt-4 mb-10 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-900 hover:bg-amber-100">
+              <span>
+                {stats.lowStock} {stats.lowStock === 1 ? "item is" : "items are"} running low on stock.
+              </span>
+              <span className="font-medium">Review stock</span>
+            </Link>
+          )}
+
           {/* Quick Actions */}
           <div className="glass-card rounded-xl p-6 mb-10">
             <h3 className="text-base font-semibold text-gray-900 mb-4">

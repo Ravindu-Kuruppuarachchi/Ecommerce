@@ -3,9 +3,9 @@
 // which the merchant owns and edits their copy.
 
 import { createSection, type Section } from "./sections";
-import type { FontName, HeaderStyle } from "./theme";
+import type { FontName, HeaderStyle, ThemeSettings } from "./theme";
 
-export type TemplateKey = "classic" | "boutique" | "bazaar";
+export type TemplateKey = "classic" | "boutique" | "bazaar" | "studio" | "market" | "noir";
 
 export interface ThemeTokens {
   primaryColor: string;
@@ -13,6 +13,7 @@ export interface ThemeTokens {
   accentColor: string;
   fontFamily: FontName;
   headerStyle: HeaderStyle;
+  settings: ThemeSettings;
 }
 
 export interface TemplatePage {
@@ -40,7 +41,7 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Classic",
     description: "Clean layout with a bold hero and a straightforward product grid.",
     bestFor: "General stores and first-time sellers",
-    theme: { primaryColor: "#18181b", secondaryColor: "#fafafa", accentColor: "#0f766e", fontFamily: "Manrope", headerStyle: "standard" },
+    theme: { primaryColor: "#18181b", secondaryColor: "#fafafa", accentColor: "#0f766e", fontFamily: "Manrope", headerStyle: "standard", settings: { corners: "soft", buttons: "solid", imageRatio: "portrait", quickAdd: true } },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
@@ -64,7 +65,7 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Boutique",
     description: "Editorial, image-led layout with generous spacing and a serif display face.",
     bestFor: "Fashion, jewellery, handmade and lifestyle brands",
-    theme: { primaryColor: "#1d2b24", secondaryColor: "#f4f5f2", accentColor: "#c2410c", fontFamily: "Playfair Display", headerStyle: "premium" },
+    theme: { primaryColor: "#1d2b24", secondaryColor: "#f4f5f2", accentColor: "#c2410c", fontFamily: "Playfair Display", headerStyle: "premium", settings: { corners: "sharp", buttons: "outline", imageRatio: "portrait", quickAdd: false } },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
@@ -88,7 +89,7 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     name: "Bazaar",
     description: "Dense, promotion-friendly layout that puts lots of products on screen.",
     bestFor: "Electronics, groceries and large catalogs",
-    theme: { primaryColor: "#0f172a", secondaryColor: "#f8fafc", accentColor: "#1d4ed8", fontFamily: "DM Sans", headerStyle: "minimal" },
+    theme: { primaryColor: "#0f172a", secondaryColor: "#f8fafc", accentColor: "#1d4ed8", fontFamily: "DM Sans", headerStyle: "minimal", settings: { corners: "soft", buttons: "solid", imageRatio: "square", quickAdd: true } },
     pages: [
       {
         slug: HOME_PAGE_SLUG,
@@ -98,6 +99,65 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
           createSection("hero", { heading: "Everything in one place", height: "compact" }, "hero"),
           createSection("category-grid", { heading: "Shop by department" }, "departments"),
           createSection("featured-products", { heading: "Best sellers", limit: 12, columns: "4" }, "best-sellers"),
+        ],
+      },
+    ],
+  },
+  studio: {
+    key: "studio",
+    name: "Studio",
+    description: "Stark black and white with sharp edges and plenty of space. Lets product photos do the work.",
+    bestFor: "Design objects, art prints, ceramics and small-batch makers",
+    theme: { primaryColor: "#0a0a0a", secondaryColor: "#fafafa", accentColor: "#0a0a0a", fontFamily: "Outfit", headerStyle: "minimal", settings: { corners: "sharp", buttons: "solid", imageRatio: "square", quickAdd: false } },
+    pages: [
+      {
+        slug: HOME_PAGE_SLUG,
+        title: "Home",
+        sections: [
+          createSection("hero", { heading: "Objects for everyday use", height: "medium", ctaLabel: "View all" }, "hero"),
+          createSection("featured-products", { heading: "Latest", limit: 6, columns: "3" }, "featured"),
+          createSection("selling-points", { background: "subtle" }, "points"),
+          createSection("rich-text", { heading: "About the studio", body: "Tell customers who makes your products and how." }, "about"),
+        ],
+      },
+    ],
+  },
+  market: {
+    key: "market",
+    name: "Market",
+    description: "Friendly and bright, with rounded shapes, promo tiles and quick add-to-cart buttons.",
+    bestFor: "Groceries, spices, tea, home essentials and repeat purchases",
+    theme: { primaryColor: "#14261a", secondaryColor: "#f6f8f4", accentColor: "#15803d", fontFamily: "Manrope", headerStyle: "standard", settings: { corners: "round", buttons: "solid", imageRatio: "square", quickAdd: true } },
+    pages: [
+      {
+        slug: HOME_PAGE_SLUG,
+        title: "Home",
+        sections: [
+          createSection("announcement", {}, "announcement"),
+          createSection("hero", { heading: "Stock up on the essentials", height: "compact" }, "hero"),
+          createSection("promo-tiles", {}, "promos"),
+          createSection("featured-products", { heading: "Popular right now", limit: 8, columns: "4" }, "popular"),
+          createSection("selling-points", { background: "subtle" }, "points"),
+          createSection("faq", {}, "faq"),
+        ],
+      },
+    ],
+  },
+  noir: {
+    key: "noir",
+    name: "Noir",
+    description: "Dark background, bright accent and large imagery. A dramatic, after-hours feel.",
+    bestFor: "Streetwear, beauty, tech accessories and nightlife brands",
+    theme: { primaryColor: "#f4f4f5", secondaryColor: "#111113", accentColor: "#f43f5e", fontFamily: "Outfit", headerStyle: "premium", settings: { corners: "sharp", buttons: "solid", imageRatio: "portrait", quickAdd: false } },
+    pages: [
+      {
+        slug: HOME_PAGE_SLUG,
+        title: "Home",
+        sections: [
+          createSection("hero", { heading: "The new drop is here", height: "full", align: "left", ctaLabel: "Shop the drop" }, "hero"),
+          createSection("featured-products", { heading: "Just landed", limit: 8, columns: "4" }, "featured"),
+          createSection("image-with-text", { heading: "Made to stand out", imagePosition: "right", background: "subtle" }, "story"),
+          createSection("newsletter", { heading: "Get first access" }, "newsletter"),
         ],
       },
     ],

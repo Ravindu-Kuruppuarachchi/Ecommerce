@@ -14,6 +14,7 @@ import {
   Receipt,
   SignOut,
   SquaresFour,
+  Stack,
   Star,
   Storefront,
   Tag,
@@ -36,7 +37,7 @@ const MODULE_ICONS: Record<ModuleKey, ComponentType<IconProps>> = {
   customers: Users,
   shipping: Truck,
   discounts: Tag,
-  inventory: Package,
+  inventory: Stack,
   reviews: Star,
   analytics: ChartLine,
   blog: Article,
@@ -67,13 +68,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const hasHydrated = useHasHydrated();
-  const { token, store, logout } = useAuthStore();
+  const { token, store, user, logout } = useAuthStore();
   const [nav, setNav] = useState<NavItem[] | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (hasHydrated && !token) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-  }, [hasHydrated, token, pathname, router]);
+    // Platform staff have no store of their own.
+    else if (hasHydrated && user?.role === "platform_admin") router.replace("/platform");
+  }, [hasHydrated, token, user?.role, pathname, router]);
 
   const loadNav = useCallback(() => {
     storeApi
@@ -91,7 +94,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  if (!hasHydrated || !token) {
+  if (!hasHydrated || !token || user?.role === "platform_admin") {
     return <div className="min-h-[100dvh] bg-gray-50" aria-busy="true" />;
   }
 

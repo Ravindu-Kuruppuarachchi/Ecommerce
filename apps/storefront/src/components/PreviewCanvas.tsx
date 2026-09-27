@@ -69,7 +69,7 @@ export default function PreviewCanvas({ store }: { store: PublicStore }) {
   };
 
   if (!sections) {
-    return <div className="mx-auto max-w-7xl animate-pulse px-4 py-16 sm:px-8"><div className="h-[50dvh] rounded-lg bg-store-surface" /></div>;
+    return <div className="mx-auto max-w-7xl animate-pulse px-4 py-16 sm:px-8"><div className="h-[50dvh] rounded-media bg-store-surface" /></div>;
   }
 
   return (

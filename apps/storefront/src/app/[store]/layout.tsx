@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import StoreFooter from "@/components/StoreFooter";
 import StoreShell from "@/components/StoreShell";
 import { getStore } from "@/lib/api";
-import { themeStyle } from "@/lib/theme";
+import { themeSettings, themeStyle } from "@/lib/theme";
 
 type Params = { params: { store: string } };
 
@@ -22,7 +22,11 @@ export default async function StoreLayout({ params, children }: Params & { child
   if (!store) notFound();
 
   return (
-    <div style={themeStyle(store.theme)} className="flex min-h-[100dvh] flex-col bg-store-bg font-body text-store-fg">
+    <div
+      style={themeStyle(store.theme)}
+      data-buttons={themeSettings(store.theme).buttons}
+      className="flex min-h-[100dvh] flex-col bg-store-bg font-body text-store-fg"
+    >
       <StoreShell store={store}>
         <main className="flex-1">{children}</main>
         <StoreFooter store={store} />

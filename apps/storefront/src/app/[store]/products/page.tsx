@@ -1,3 +1,4 @@
+import { themeSettings } from "@/lib/theme";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +15,7 @@ export default async function Catalog({ params, searchParams }: { params: { stor
   const categories = [...new Set(all.map((p) => p.category).filter((c): c is string => Boolean(c)))].sort();
   const products = active ? all.filter((p) => p.category === active) : all;
   const pill = (selected: boolean) =>
-    `rounded-md border px-4 py-2 text-sm transition-colors ${selected ? "border-store-fg bg-store-fg text-store-bg" : "border-store-line text-store-muted hover:text-store-fg"}`;
+    `rounded-control border px-4 py-2 text-sm transition-colors ${selected ? "border-store-fg bg-store-fg text-store-bg" : "border-store-line text-store-muted hover:text-store-fg"}`;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
@@ -45,7 +46,7 @@ export default async function Catalog({ params, searchParams }: { params: { stor
       ) : (
         <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} storeSlug={store.slug} currency={store.currency} />
+            <ProductCard key={p.id} product={p} storeSlug={store.slug} currency={store.currency} quickAdd={themeSettings(store.theme).quickAdd} />
           ))}
         </div>
       )}

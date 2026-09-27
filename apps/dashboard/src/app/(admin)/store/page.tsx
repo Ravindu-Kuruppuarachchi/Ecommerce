@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowSquareOut, Trash, Warning } from "@phosphor-icons/react";
-import { contrastRatio, FONT_OPTIONS, HEADER_STYLES, HOME_PAGE_SLUG, TEMPLATE_KEYS, TEMPLATES, type TemplateKey } from "@repo/core";
+import { contrastRatio, FONT_OPTIONS, HEADER_STYLES, HOME_PAGE_SLUG, normalizeThemeSettings, TEMPLATE_KEYS, TEMPLATES, type TemplateKey, type ThemeSettings } from "@repo/core";
 import { errorMessage, pageApi, storeApi } from "@/lib/api-client";
 import { storefrontUrl } from "@/lib/urls";
 import { useAuthStore } from "@/stores/auth-store";
@@ -22,6 +22,7 @@ interface Theme {
   accentColor: string;
   fontFamily: string;
   headerStyle: string;
+  settings: unknown;
 }
 
 function Card({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
@@ -109,8 +110,16 @@ function PagesCard({ storeSlug }: { storeSlug: string }) {
   );
 }
 
+const SETTING_CHOICES = {
+  corners: { label: "Corners", options: [["sharp", "Sharp"], ["soft", "Soft"], ["round", "Round"]] },
+  buttons: { label: "Buttons", options: [["solid", "Filled"], ["outline", "Outline"]] },
+  imageRatio: { label: "Product image shape", options: [["portrait", "Portrait"], ["square", "Square"], ["landscape", "Landscape"]] },
+} as const;
+
 function ThemeCard({ initial }: { initial: Theme }) {
   const [theme, setTheme] = useState(initial);
+  const [settings, setSettings] = useState<ThemeSettings>(normalizeThemeSettings(initial.settings));
+  useEffect(() => setSettings(normalizeThemeSettings(initial.settings)), [initial]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   useEffect(() => setTheme(initial), [initial]);
@@ -125,7 +134,8 @@ function ThemeCard({ initial }: { initial: Theme }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await storeApi.updateTheme(theme);
+      const { settings: _raw, ...tokens } = theme;
+      await storeApi.updateTheme({ ...tokens, settings });
       setMessage({ ok: true, text: "Theme saved." });
     } catch (err) {
       setMessage({ ok: false, text: errorMessage(err, "Couldn't save the theme") });
@@ -134,7 +144,7 @@ function ThemeCard({ initial }: { initial: Theme }) {
     }
   };
 
-  const colors: Array<{ key: keyof Theme; label: string }> = [
+  const colors: Array<{ key: "primaryColor" | "secondaryColor" | "accentColor"; label: string }> = [
     { key: "secondaryColor", label: "Background" },
     { key: "primaryColor", label: "Text" },
     { key: "accentColor", label: "Buttons and highlights" },
@@ -178,6 +188,35 @@ function ThemeCard({ initial }: { initial: Theme }) {
             </select>
           </div>
         </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(Object.keys(SETTING_CHOICES) as Array<keyof typeof SETTING_CHOICES>).map((key) => (
+            <fieldset key={key}>
+              <legend className="mb-1.5 block text-sm font-medium text-gray-700">{SETTING_CHOICES[key].label}</legend>
+              <div className="flex rounded-lg border border-gray-200 p-0.5">
+                {SETTING_CHOICES[key].options.map(([value, text]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={settings[key] === value}
+                    onClick={() => { setSettings({ ...settings, [key]: value }); setMessage(null); }}
+                    className={`flex-1 rounded-md px-2 py-1.5 text-sm ${settings[key] === value ? "bg-gray-900 text-white" : "text-gray-600 hover:text-gray-900"}`}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={settings.quickAdd}
+            onChange={(e) => { setSettings({ ...settings, quickAdd: e.target.checked }); setMessage(null); }}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          Show an &ldquo;Add to cart&rdquo; button on product cards
+        </label>
         <div className="flex items-center gap-3">
           <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save theme"}</button>
           {message && <p className={`text-sm ${message.ok ? "text-emerald-700" : "text-red-600"}`} role="status">{message.text}</p>}
@@ -223,7 +262,8 @@ function TemplatesCard({ current, onApplied }: { current: string; onApplied: () 
                 </div>
               </div>
               <p className="mt-3 text-sm font-semibold text-gray-900">{t.name}</p>
-              <p className="mt-1 flex-1 text-xs text-gray-500">{t.bestFor}</p>
+              <p className="mt-1 text-xs text-gray-600">{t.description}</p>
+              <p className="mt-1 flex-1 text-xs text-gray-500">Good for: {t.bestFor.toLowerCase()}</p>
               {current === key ? (
                 <span className="mt-3 text-xs font-medium text-brand-700">Current template</span>
               ) : (

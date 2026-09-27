@@ -45,7 +45,7 @@ export const productApi = {
 export const orderApi = {
   list: () => apiClient.get("/orders"),
   get: (id: string) => apiClient.get(`/orders/${id}`),
-  updateStatus: (id: string, change: { status?: string; fulfillmentStatus?: string }) =>
+  updateStatus: (id: string, change: { status?: string; fulfillmentStatus?: string; courier?: string | null; trackingNumber?: string | null }) =>
     apiClient.patch(`/orders/${id}/status`, change),
   markPaid: (id: string) => apiClient.post(`/orders/${id}/mark-paid`)
 };
@@ -78,6 +78,40 @@ export const templateApi = {
 
 export const customerApi = {
   list: () => apiClient.get("/customers")
+};
+
+export const shippingApi = {
+  zones: () => apiClient.get("/shipping/zones"),
+  create: (data: unknown) => apiClient.post("/shipping/zones", data),
+  update: (id: string, data: unknown) => apiClient.put(`/shipping/zones/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/shipping/zones/${id}`)
+};
+
+export const discountApi = {
+  list: () => apiClient.get("/discounts"),
+  create: (data: unknown) => apiClient.post("/discounts", data),
+  update: (id: string, data: unknown) => apiClient.put(`/discounts/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/discounts/${id}`)
+};
+
+export const inventoryApi = {
+  list: () => apiClient.get("/inventory"),
+  adjust: (data: { productId: string; variantId?: string | null; mode: "add" | "set"; amount: number; reason: string; note?: string }) =>
+    apiClient.post("/inventory/adjust", data),
+  history: (productId?: string) => apiClient.get("/inventory/history", { params: productId ? { productId } : {} })
+};
+
+export const analyticsApi = {
+  get: (days: number) => apiClient.get("/analytics", { params: { days } })
+};
+
+export const platformApi = {
+  overview: (days: number) => apiClient.get("/platform/overview", { params: { days } }),
+  stores: (days: number) => apiClient.get("/platform/stores", { params: { days } }),
+  store: (id: string, days: number) => apiClient.get(`/platform/stores/${id}`, { params: { days } }),
+  updateStore: (id: string, data: { status?: string; platformFeeBps?: number; reason: string }) => apiClient.patch(`/platform/stores/${id}`, data),
+  recordMoney: (id: string, data: { kind: "fee_payment" | "payout"; amount: string; reference: string }) => apiClient.post(`/platform/stores/${id}/ledger`, data),
+  audit: () => apiClient.get("/platform/audit")
 };
 
 export const payoutApi = {

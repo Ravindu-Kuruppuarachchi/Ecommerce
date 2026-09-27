@@ -19,7 +19,15 @@ module.exports = {
         heading: "var(--s-font-heading)",
         body: "var(--s-font-body)",
       },
-      // Shape rule: controls use rounded-md, media and panels use rounded-lg.
+      // Shape rule: controls (buttons, inputs) use rounded-control, images and panels use
+      // rounded-media. Both follow the store's corner style setting.
+      borderRadius: {
+        control: "var(--s-radius-control)",
+        media: "var(--s-radius-media)",
+      },
+      aspectRatio: {
+        product: "var(--s-image-ratio)",
+      },
     },
   },
   plugins: [],

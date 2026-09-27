@@ -20,7 +20,7 @@ const checkoutSchema = z.object({
   email: z.string().trim().email(),
   paymentMethod: z.enum(PAYMENT_METHODS),
   items: z
-    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(100) }))
+    .array(z.object({ productId: z.string().min(1).max(40), variantId: z.string().min(1).max(40).optional(), quantity: z.number().int().min(1).max(100) }))
     .min(1)
     .max(50),
   shippingAddress: z.object({
@@ -32,6 +32,7 @@ const checkoutSchema = z.object({
     district: z.string().trim().max(80).optional(),
     postalCode: z.string().trim().max(10).optional(),
   }),
+  discountCode: z.string().trim().max(40).optional(),
   notes: z.string().max(1000).optional(),
 });
 
@@ -50,9 +51,11 @@ ordersRouter.post(
       subtotalCents: order.subtotalCents,
       taxCents: order.taxCents,
       shippingCents: order.shippingCents,
+      discountCents: order.discountCents,
+      discountTitle: order.discountTitle,
       totalCents: order.totalCents,
       paymentMethod: order.paymentMethod,
-      items: order.items.map((i) => ({ productName: i.productName, quantity: i.quantity, unitPriceCents: i.unitPriceCents })),
+      items: order.items.map((i) => ({ productName: i.productName, variantTitle: i.variantTitle, quantity: i.quantity, unitPriceCents: i.unitPriceCents })),
     });
   }),
 );
@@ -92,8 +95,10 @@ ordersRouter.patch(
         .object({
           status: z.enum(["confirmed", "completed", "cancelled"]).optional(),
           fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
+          courier: z.string().trim().max(60).nullable().optional(),
+          trackingNumber: z.string().trim().max(80).nullable().optional(),
         })
-        .refine((c) => c.status || c.fulfillmentStatus, "Nothing to change"),
+        .refine((c) => Object.values(c).some((v) => v !== undefined), "Nothing to change"),
       req.body,
     );
     res.json(await updateOrderStatus(req.store!.id, req.params.id, change));

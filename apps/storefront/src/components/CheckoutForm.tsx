@@ -1,35 +1,102 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
-import { applyBps, formatMoney } from "@repo/core";
+import { CheckCircle, Tag, X } from "@phosphor-icons/react/dist/ssr";
+import { applyBps, formatMoney, SRI_LANKA_DISTRICTS } from "@repo/core";
 import { API_URL } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { track } from "@/lib/track";
 import type { PublicStore } from "@/lib/types";
 
-const FIELDS = [
-  { name: "email", label: "Email", type: "email", autoComplete: "email", required: true },
-  { name: "phone", label: "Mobile number", type: "tel", autoComplete: "tel", required: true, help: "The courier calls this number on delivery day." },
-  { name: "name", label: "Full name", type: "text", autoComplete: "name", required: true },
-  { name: "line1", label: "Address", type: "text", autoComplete: "address-line1", required: true },
-  { name: "line2", label: "Apartment, floor, landmark (optional)", type: "text", autoComplete: "address-line2", required: false },
-] as const;
-
 type FormState = Record<"email" | "phone" | "name" | "line1" | "line2" | "city" | "district" | "postalCode", string>;
+
+interface Quote {
+  zone: { name: string; estimatedDays: string | null; freeOverCents: number | null } | null;
+  shippingCents: number;
+  shippingBeforeDiscountCents: number;
+  discount: { title: string; code: string | null; type: string } | null;
+  discountCents: number;
+}
+
+async function post<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.details?.[0]?.message ?? data?.error ?? "Something went wrong");
+  return data;
+}
 
 export default function CheckoutForm({ store }: { store: PublicStore }) {
   const cart = useCart();
   const [form, setForm] = useState<FormState>({ email: "", phone: "", name: "", line1: "", line2: "", city: "", district: "", postalCode: "" });
+  const [codeInput, setCodeInput] = useState("");
+  const [code, setCode] = useState<string | null>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [codeError, setCodeError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [placed, setPlaced] = useState<{ orderNumber: number; totalCents: number } | null>(null);
 
+  const { shipping: shippingOn, discounts: discountsOn } = store.features;
   const money = (cents: number) => formatMoney(cents, store.currency);
-  // Display estimate only; the API prices the order from the database.
-  const tax = applyBps(cart.subtotalCents, store.taxBps);
-  const total = cart.subtotalCents + tax;
-  const set = (name: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [name]: e.target.value }));
+  const set = (name: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [name]: e.target.value }));
+
+  useEffect(() => {
+    if (cart.ready && cart.items.length) track(store.slug, "checkout_start");
+    // Once per visit to checkout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.ready]);
+
+  // Ask the server for delivery and discounts whenever something that affects them changes.
+  const needsDistrict = shippingOn && !form.district;
+  useEffect(() => {
+    if (!cart.ready || !cart.items.length || needsDistrict || (!shippingOn && !discountsOn)) {
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    post<Quote>(`${API_URL}/stores/${store.slug}/quote`, {
+      subtotalCents: cart.subtotalCents,
+      district: form.district || undefined,
+      code: code ?? undefined,
+    })
+      .then((q) => {
+        if (cancelled) return;
+        setQuote(q);
+        setQuoteError("");
+        // A valid code that saves nothing on this order (e.g. free delivery when delivery is already free).
+        if (code && q.discount?.code !== code) setCodeError("This code doesn't lower your total on this order.");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (code) {
+          // Keep the order usable: drop the code and show why.
+          setCodeError(err.message);
+          setCode(null);
+        } else {
+          setQuote(null);
+          setQuoteError(err.message);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cart.ready, cart.items.length, cart.subtotalCents, form.district, code, needsDistrict, shippingOn, discountsOn, store.slug]);
+
+  const discountCents = quote?.discountCents ?? 0;
+  const shippingCents = quote?.shippingCents ?? 0;
+  const goods = cart.subtotalCents - discountCents;
+  const tax = applyBps(goods, store.taxBps);
+  const total = goods + tax + shippingCents;
+  const ready = !needsDistrict && !quoteError;
+
+  const applyCode = (e: FormEvent) => {
+    e.preventDefault();
+    setCodeError("");
+    const value = codeInput.trim().toUpperCase();
+    if (value) setCode(value);
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,29 +104,24 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
     setError("");
     try {
       const optional = (v: string) => (v.trim() ? v.trim() : undefined);
-      const res = await fetch(`${API_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeSlug: store.slug,
-          email: form.email,
-          paymentMethod: "cod",
-          items: cart.items.map((i) => ({ productId: i.id, quantity: i.quantity })),
-          shippingAddress: {
-            name: form.name,
-            phone: form.phone,
-            line1: form.line1,
-            line2: optional(form.line2),
-            city: form.city,
-            district: optional(form.district),
-            postalCode: optional(form.postalCode),
-          },
-        }),
+      const order = await post<{ orderNumber: number; totalCents: number }>(`${API_URL}/orders`, {
+        storeSlug: store.slug,
+        email: form.email,
+        paymentMethod: "cod",
+        discountCode: code ?? undefined,
+        items: cart.items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+        shippingAddress: {
+          name: form.name,
+          phone: form.phone,
+          line1: form.line1,
+          line2: optional(form.line2),
+          city: form.city,
+          district: optional(form.district),
+          postalCode: optional(form.postalCode),
+        },
       });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.details?.[0]?.message ?? body?.error ?? "We couldn't place your order");
       cart.clear();
-      setPlaced({ orderNumber: body.orderNumber, totalCents: body.totalCents });
+      setPlaced(order);
     } catch (err) {
       setError(err instanceof Error ? err.message : "We couldn't place your order");
     } finally {
@@ -73,15 +135,15 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
         <CheckCircle size={48} className="mx-auto text-store-accent" />
         <h1 className="mt-4 font-heading text-3xl font-semibold">Order #{placed.orderNumber} placed</h1>
         <p className="mt-3 text-store-muted">
-          Please have <strong className="text-store-fg">{money(placed.totalCents)}</strong> ready in cash when it arrives. Keep your order
-          number in case you need to contact {store.name}.
+          Please have <strong className="text-store-fg">{money(placed.totalCents)}</strong> ready in cash when it arrives
+          {quote?.zone?.estimatedDays ? ` (usually ${quote.zone.estimatedDays})` : ""}. Keep your order number in case you need to contact {store.name}.
         </p>
         <Link href={`/${store.slug}`} className="btn-secondary mt-8">Continue shopping</Link>
       </div>
     );
   }
 
-  if (!cart.ready) return <div className="mx-auto h-96 max-w-5xl animate-pulse px-4 py-12 sm:px-8"><div className="h-full rounded-lg bg-store-surface" /></div>;
+  if (!cart.ready) return <div className="mx-auto h-96 max-w-5xl animate-pulse px-4 py-12 sm:px-8"><div className="h-full rounded-media bg-store-surface" /></div>;
 
   if (cart.items.length === 0) {
     return (
@@ -93,64 +155,109 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
   }
 
   const closed = store.status !== "live";
+  const field = (name: keyof FormState, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, help?: string) => (
+    <div>
+      <label htmlFor={`co-${name}`} className="field-label">{label}</label>
+      <input id={`co-${name}`} value={form[name]} onChange={set(name)} className="field" {...props} />
+      {help && <p className="mt-1.5 text-xs text-store-muted">{help}</p>}
+    </div>
+  );
 
   return (
     <div className="mx-auto grid max-w-5xl gap-12 px-4 py-12 sm:px-8 lg:grid-cols-[1fr_380px]">
       <form onSubmit={submit} className="flex flex-col gap-5">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Checkout</h1>
-        {FIELDS.map((f) => (
-          <div key={f.name}>
-            <label htmlFor={`co-${f.name}`} className="field-label">{f.label}</label>
-            <input id={`co-${f.name}`} type={f.type} autoComplete={f.autoComplete} required={f.required} value={form[f.name]} onChange={set(f.name)} className="field" />
-            {"help" in f && <p className="mt-1.5 text-xs text-store-muted">{f.help}</p>}
-          </div>
-        ))}
+        {field("email", "Email", { type: "email", autoComplete: "email", required: true })}
+        {field("phone", "Mobile number", { type: "tel", autoComplete: "tel", required: true }, "The courier calls this number on delivery day.")}
+        {field("name", "Full name", { autoComplete: "name", required: true })}
+        {field("line1", "Address", { autoComplete: "address-line1", required: true })}
+        {field("line2", "Apartment, floor, landmark (optional)", { autoComplete: "address-line2" })}
         <div className="grid gap-5 sm:grid-cols-3">
-          <div>
-            <label htmlFor="co-city" className="field-label">City</label>
-            <input id="co-city" required autoComplete="address-level2" value={form.city} onChange={set("city")} className="field" />
-          </div>
+          {field("city", "City", { autoComplete: "address-level2", required: true })}
           <div>
             <label htmlFor="co-district" className="field-label">District</label>
-            <input id="co-district" autoComplete="address-level1" value={form.district} onChange={set("district")} className="field" />
+            <select id="co-district" value={form.district} onChange={set("district")} required={shippingOn} autoComplete="address-level1" className="field">
+              <option value="">Choose…</option>
+              {SRI_LANKA_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
-          <div>
-            <label htmlFor="co-postal" className="field-label">Postal code</label>
-            <input id="co-postal" inputMode="numeric" autoComplete="postal-code" value={form.postalCode} onChange={set("postalCode")} className="field" />
-          </div>
+          {field("postalCode", "Postal code", { inputMode: "numeric", autoComplete: "postal-code" })}
         </div>
+        {quoteError && <p role="alert" className="text-sm text-red-700">{quoteError}</p>}
 
-        <fieldset className="rounded-lg border border-store-line p-4">
+        <fieldset className="rounded-media border border-store-line p-4">
           <legend className="px-1 text-sm font-medium">Payment</legend>
           <p className="text-sm">Cash on delivery</p>
           <p className="mt-1 text-xs text-store-muted">Pay the courier when your order arrives.</p>
         </fieldset>
 
-        {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+        {error && <p role="alert" className="rounded-control border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
         {closed && <p className="text-sm text-store-muted">This store isn&apos;t taking orders yet.</p>}
-        <button type="submit" disabled={submitting || closed} className="btn-primary">
-          {submitting ? "Placing order…" : `Place order · ${money(total)}`}
+        <button type="submit" disabled={submitting || closed || !ready} className="btn-primary">
+          {submitting ? "Placing order…" : needsDistrict ? "Choose your district" : `Place order · ${money(total)}`}
         </button>
       </form>
 
-      <aside className="h-fit rounded-lg bg-store-surface p-6 lg:sticky lg:top-24">
+      <aside className="h-fit rounded-media bg-store-surface p-6 lg:sticky lg:top-24">
         <h2 className="mb-4 font-medium">Order summary</h2>
         <ul className="divide-y divide-store-line">
           {cart.items.map((item) => (
-            <li key={item.id} className="flex items-center gap-3 py-3">
-              {item.image ? <img src={item.image} alt="" className="h-14 w-12 rounded-md object-cover" /> : <span className="h-14 w-12 rounded-md bg-store-line" />}
+            <li key={item.key} className="flex items-center gap-3 py-3">
+              {item.image ? <img src={item.image} alt="" className="h-14 w-12 rounded-control object-cover" /> : <span className="h-14 w-12 rounded-control bg-store-line" />}
               <span className="flex-1 text-sm">
                 {item.name}
-                <span className="block text-xs text-store-muted">Qty {item.quantity}</span>
+                <span className="block text-xs text-store-muted">
+                  {item.variantTitle && <>{item.variantTitle} · </>}Qty {item.quantity}
+                </span>
               </span>
               <span className="text-sm">{money(item.priceCents * item.quantity)}</span>
             </li>
           ))}
         </ul>
+
+        {discountsOn && (
+          <div className="mt-4 border-t border-store-line pt-4">
+            {code && quote?.discount?.code === code ? (
+              <p className="flex items-center justify-between rounded-control border border-store-line px-3 py-2 text-sm">
+                <span className="flex items-center gap-2"><Tag size={16} /> {code}</span>
+                <button type="button" onClick={() => { setCode(null); setCodeInput(""); setCodeError(""); }} aria-label="Remove code" className="p-1">
+                  <X size={14} />
+                </button>
+              </p>
+            ) : (
+              <form onSubmit={applyCode} className="flex gap-2">
+                <label htmlFor="co-code" className="sr-only">Discount code</label>
+                <input id="co-code" value={codeInput} onChange={(e) => setCodeInput(e.target.value)} placeholder="Discount code" className="field uppercase" />
+                <button type="submit" className="btn-secondary px-4">Apply</button>
+              </form>
+            )}
+            {codeError && <p className="mt-2 text-xs text-red-700" role="alert">{codeError}</p>}
+          </div>
+        )}
+
         <dl className="mt-4 space-y-2 border-t border-store-line pt-4 text-sm">
           <div className="flex justify-between"><dt className="text-store-muted">Subtotal</dt><dd>{money(cart.subtotalCents)}</dd></div>
+          {discountCents > 0 && (
+            <div className="flex justify-between text-store-accent"><dt>{quote?.discount?.title}</dt><dd>−{money(discountCents)}</dd></div>
+          )}
           {store.taxBps > 0 && <div className="flex justify-between"><dt className="text-store-muted">Tax ({store.taxBps / 100}%)</dt><dd>{money(tax)}</dd></div>}
-          <div className="flex justify-between"><dt className="text-store-muted">Delivery</dt><dd>Free</dd></div>
+          <div className="flex justify-between">
+            <dt className="text-store-muted">
+              Delivery
+              {quote?.zone?.estimatedDays && <span className="block text-xs">{quote.zone.estimatedDays}</span>}
+            </dt>
+            <dd>
+              {!shippingOn ? "Free" : needsDistrict ? "Choose district" : !quote ? "…" : shippingCents === 0 ? (
+                <>
+                  {quote.shippingBeforeDiscountCents > 0 && <s className="mr-1.5 text-store-muted">{money(quote.shippingBeforeDiscountCents)}</s>}
+                  Free
+                </>
+              ) : money(shippingCents)}
+            </dd>
+          </div>
+          {quote?.zone?.freeOverCents && shippingCents > 0 && goods < quote.zone.freeOverCents && (
+            <p className="text-xs text-store-muted">Free delivery to {form.district} on orders over {money(quote.zone.freeOverCents)}.</p>
+          )}
           <div className="flex justify-between border-t border-store-line pt-2 text-base font-semibold"><dt>Total</dt><dd>{money(total)}</dd></div>
         </dl>
       </aside>

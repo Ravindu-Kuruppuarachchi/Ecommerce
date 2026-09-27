@@ -1,8 +1,8 @@
+import { themeSettings } from "@/lib/theme";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatMoney } from "@repo/core";
-import AddToCartButton from "@/components/AddToCartButton";
+import ProductPurchase from "@/components/ProductPurchase";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getStore } from "@/lib/api";
 
@@ -24,7 +24,6 @@ export default async function ProductPage({ params }: Params) {
   if (!store || !data) notFound();
   const { product, relatedProducts } = data;
   const [main, ...rest] = product.images;
-  const onSale = product.compareAtPriceCents !== null && product.compareAtPriceCents > product.priceCents;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
@@ -42,13 +41,13 @@ export default async function ProductPage({ params }: Params) {
 
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
-          <div className="aspect-[4/5] overflow-hidden rounded-lg bg-store-surface">
+          <div className="aspect-product overflow-hidden rounded-media bg-store-surface">
             {main && <img src={main.url} alt={main.alt ?? product.name} className="h-full w-full object-cover" />}
           </div>
           {rest.length > 0 && (
             <div className="grid grid-cols-4 gap-3">
               {rest.map((img) => (
-                <img key={img.url} src={img.url} alt={img.alt ?? ""} loading="lazy" className="aspect-square rounded-lg object-cover" />
+                <img key={img.url} src={img.url} alt={img.alt ?? ""} loading="lazy" className="aspect-square rounded-media object-cover" />
               ))}
             </div>
           )}
@@ -56,14 +55,7 @@ export default async function ProductPage({ params }: Params) {
 
         <div className="md:pt-4">
           <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{product.name}</h1>
-          <p className="mt-4 text-xl">
-            <span className={onSale ? "text-store-accent" : ""}>{formatMoney(product.priceCents, store.currency)}</span>
-            {onSale && <s className="ml-3 text-base text-store-muted">{formatMoney(product.compareAtPriceCents!, store.currency)}</s>}
-          </p>
-          <p className="mt-2 text-sm text-store-muted">
-            {product.quantity <= 0 ? "Out of stock" : product.quantity < 10 ? `Only ${product.quantity} left` : "In stock"}
-          </p>
-          <AddToCartButton product={product} withQuantity className="mt-8 max-w-md" />
+          <ProductPurchase product={product} store={store} />
           {product.description && (
             <div className="mt-10 max-w-[60ch] space-y-4 leading-relaxed text-store-muted">
               {product.description.split(/\n\s*\n/).map((p, i) => (
@@ -79,7 +71,7 @@ export default async function ProductPage({ params }: Params) {
           <h2 className="mb-8 font-heading text-2xl font-semibold tracking-tight">You may also like</h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
             {relatedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} storeSlug={store.slug} currency={store.currency} />
+              <ProductCard key={p.id} product={p} storeSlug={store.slug} currency={store.currency} quickAdd={themeSettings(store.theme).quickAdd} />
             ))}
           </div>
         </section>

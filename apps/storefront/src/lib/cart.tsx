@@ -3,7 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export interface CartItem {
-  id: string;
+  /** Unique per product and variant. */
+  key: string;
+  productId: string;
+  variantId?: string;
+  variantTitle?: string;
   name: string;
   slug: string;
   priceCents: number;
@@ -22,27 +26,29 @@ interface CartContextValue {
   isOpen: boolean;
   open: () => void;
   close: () => void;
-  add: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  setQuantity: (id: string, quantity: number) => void;
-  remove: (id: string) => void;
+  add: (item: Omit<CartItem, "quantity" | "key">, quantity?: number) => void;
+  setQuantity: (key: string, quantity: number) => void;
+  remove: (key: string) => void;
   clear: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 // Versioned so carts saved before prices moved to integer cents are ignored rather than misread.
-const cartKey = (storeSlug: string) => `cart-v3-${storeSlug}`;
+const cartKey = (storeSlug: string) => `cart-v4-${storeSlug}`;
+
+export const itemKey = (productId: string, variantId?: string) => `${productId}:${variantId ?? ""}`;
 
 function readCart(storeSlug: string): CartItem[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(cartKey(storeSlug)) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((i) => typeof i?.id === "string" && Number.isInteger(i?.priceCents)) : [];
+    return Array.isArray(parsed) ? parsed.filter((i) => typeof i?.key === "string" && Number.isInteger(i?.priceCents)) : [];
   } catch {
     return [];
   }
 }
 
-export function CartProvider({ storeSlug, children }: { storeSlug: string; children: ReactNode }) {
+export function CartProvider({ storeSlug, onAdd, children }: { storeSlug: string; onAdd?: (productId: string) => void; children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -61,20 +67,25 @@ export function CartProvider({ storeSlug, children }: { storeSlug: string; child
     }
   }, [items, ready, storeSlug]);
 
-  const add = useCallback((item: Omit<CartItem, "quantity">, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) => (i.id === item.id ? { ...i, ...item, quantity: Math.min(i.quantity + quantity, item.maxQuantity) } : i));
-      }
-      return [...prev, { ...item, quantity: Math.min(quantity, item.maxQuantity) }];
-    });
-    setIsOpen(true);
-  }, []);
+  const add = useCallback(
+    (item: Omit<CartItem, "quantity" | "key">, quantity = 1) => {
+      const key = itemKey(item.productId, item.variantId);
+      setItems((prev) => {
+        const existing = prev.find((i) => i.key === key);
+        if (existing) {
+          return prev.map((i) => (i.key === key ? { ...i, ...item, quantity: Math.min(i.quantity + quantity, item.maxQuantity) } : i));
+        }
+        return [...prev, { ...item, key, quantity: Math.min(quantity, item.maxQuantity) }];
+      });
+      setIsOpen(true);
+      onAdd?.(item.productId);
+    },
+    [onAdd],
+  );
 
-  const setQuantity = useCallback((id: string, quantity: number) => {
+  const setQuantity = useCallback((key: string, quantity: number) => {
     setItems((prev) =>
-      quantity <= 0 ? prev.filter((i) => i.id !== id) : prev.map((i) => (i.id === id ? { ...i, quantity: Math.min(quantity, i.maxQuantity) } : i)),
+      quantity <= 0 ? prev.filter((i) => i.key !== key) : prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(quantity, i.maxQuantity) } : i)),
     );
   }, []);
 
@@ -89,7 +100,7 @@ export function CartProvider({ storeSlug, children }: { storeSlug: string; child
       close: () => setIsOpen(false),
       add,
       setQuantity,
-      remove: (id) => setItems((prev) => prev.filter((i) => i.id !== id)),
+      remove: (key) => setItems((prev) => prev.filter((i) => i.key !== key)),
       clear: () => setItems([]),
     }),
     [items, ready, isOpen, add, setQuantity],

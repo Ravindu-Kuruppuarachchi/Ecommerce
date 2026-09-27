@@ -39,7 +39,7 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
       >
         <div className="flex items-center justify-between border-b border-store-line px-5 py-4">
           <h2 className="font-heading text-lg font-semibold">Your cart</h2>
-          <button type="button" onClick={cart.close} aria-label="Close cart" className="rounded-md p-2 hover:bg-store-surface">
+          <button type="button" onClick={cart.close} aria-label="Close cart" className="rounded-control p-2 hover:bg-store-surface">
             <X size={20} />
           </button>
         </div>
@@ -56,11 +56,11 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
           <>
             <ul className="flex-1 divide-y divide-store-line overflow-y-auto px-5">
               {cart.items.map((item) => (
-                <li key={item.id} className="flex gap-4 py-4">
+                <li key={item.key} className="flex gap-4 py-4">
                   {item.image ? (
-                    <img src={item.image} alt="" className="h-20 w-16 rounded-lg object-cover" />
+                    <img src={item.image} alt="" className="h-20 w-16 rounded-media object-cover" />
                   ) : (
-                    <span className="h-20 w-16 rounded-lg bg-store-surface" />
+                    <span className="h-20 w-16 rounded-media bg-store-surface" />
                   )}
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex justify-between gap-3">
@@ -69,13 +69,16 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
                       </Link>
                       <span className="text-sm">{money(item.priceCents * item.quantity)}</span>
                     </div>
-                    <span className="text-xs text-store-muted">{money(item.priceCents)} each</span>
+                    <span className="text-xs text-store-muted">
+                      {item.variantTitle && <>{item.variantTitle} · </>}
+                      {money(item.priceCents)} each
+                    </span>
                     <div className="mt-auto flex items-center justify-between">
-                      <div className="flex items-center rounded-md border border-store-line">
+                      <div className="flex items-center rounded-control border border-store-line">
                         <button
                           type="button"
                           aria-label={`One fewer ${item.name}`}
-                          onClick={() => cart.setQuantity(item.id, item.quantity - 1)}
+                          onClick={() => cart.setQuantity(item.key, item.quantity - 1)}
                           className="p-2 hover:bg-store-surface"
                         >
                           <Minus size={14} />
@@ -85,13 +88,13 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
                           type="button"
                           aria-label={`One more ${item.name}`}
                           disabled={item.quantity >= item.maxQuantity}
-                          onClick={() => cart.setQuantity(item.id, item.quantity + 1)}
+                          onClick={() => cart.setQuantity(item.key, item.quantity + 1)}
                           className="p-2 hover:bg-store-surface disabled:opacity-40"
                         >
                           <Plus size={14} />
                         </button>
                       </div>
-                      <button type="button" onClick={() => cart.remove(item.id)} className="text-xs text-store-muted underline-offset-2 hover:underline">
+                      <button type="button" onClick={() => cart.remove(item.key)} className="text-xs text-store-muted underline-offset-2 hover:underline">
                         Remove
                       </button>
                     </div>

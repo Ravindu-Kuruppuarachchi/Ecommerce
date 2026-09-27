@@ -1,4 +1,4 @@
-import type { HeaderStyle, Section } from "@repo/core";
+import type { HeaderStyle, ProductOption, Section } from "@repo/core";
 
 export interface StoreTheme {
   primaryColor: string;
@@ -6,6 +6,8 @@ export interface StoreTheme {
   accentColor: string;
   fontFamily: string;
   headerStyle: HeaderStyle;
+  /** Raw JSON from the API; read it through themeSettings(). */
+  settings: unknown;
 }
 
 export interface PublicStore {
@@ -19,6 +21,17 @@ export interface PublicStore {
   status: "draft" | "live" | "suspended";
   theme: StoreTheme | null;
   pages: Array<{ slug: string; title: string }>;
+  /** Optional modules the storefront needs to know about. */
+  features: { shipping: boolean; discounts: boolean; analytics: boolean };
+}
+
+export interface ProductVariant {
+  id: string;
+  title: string;
+  optionValues: Record<string, string>;
+  /** Null means the product price. */
+  priceCents: number | null;
+  quantity: number;
 }
 
 export interface Product {
@@ -31,6 +44,8 @@ export interface Product {
   quantity: number;
   category: string | null;
   images: Array<{ url: string; alt: string | null }>;
+  options: ProductOption[];
+  variants: ProductVariant[];
 }
 
 export interface PublishedPage {

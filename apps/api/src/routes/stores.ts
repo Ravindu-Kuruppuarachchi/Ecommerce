@@ -6,7 +6,11 @@ import {
   dependents,
   effectiveModules,
   HOME_PAGE_SLUG,
+  BUTTON_STYLES,
+  CORNER_STYLES,
+  IMAGE_RATIOS,
   isFontName,
+  normalizeThemeSettings,
   isModuleKey,
   isTemplateKey,
   missingRequirements,
@@ -21,6 +25,7 @@ import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { merchant } from "../middleware/auth";
 import { rateLimit } from "../middleware/rate-limit";
+import { activeModules } from "../services/modules";
 import { applyTemplate, slugify } from "../services/stores";
 
 // ============ TEMPLATES (public catalog) ============
@@ -54,6 +59,7 @@ const storeUpdateSchema = z.object({
   taxBps: z.number().int().min(0).max(5000).optional(),
   // "suspended" is set by platform admins only.
   status: z.enum(["draft", "live"]).optional(),
+  lowStockThreshold: z.number().int().min(0).max(10_000).optional(),
 });
 
 const themeUpdateSchema = z.object({
@@ -62,6 +68,15 @@ const themeUpdateSchema = z.object({
   accentColor: hexColor.optional(),
   fontFamily: z.string().refine(isFontName, "Pick one of the available fonts").optional(),
   headerStyle: z.enum(["minimal", "standard", "premium"]).optional(),
+  settings: z
+    .object({
+      corners: z.enum(CORNER_STYLES),
+      buttons: z.enum(BUTTON_STYLES),
+      imageRatio: z.enum(IMAGE_RATIOS),
+      quickAdd: z.boolean(),
+    })
+    .partial()
+    .optional(),
 });
 
 myStoreRouter.get(
@@ -98,11 +113,14 @@ myStoreRouter.patch(
 myStoreRouter.patch(
   "/theme",
   asyncHandler(async (req, res) => {
-    const data = parseBody(themeUpdateSchema, req.body);
+    const { settings: patch, ...data } = parseBody(themeUpdateSchema, req.body);
+    // Settings merge over what's stored, so the dashboard can change one at a time.
+    const current = await prisma.storeTheme.findUnique({ where: { storeId: req.store!.id }, select: { settings: true } });
+    const settings = normalizeThemeSettings({ ...normalizeThemeSettings(current?.settings), ...patch }) as unknown as Prisma.InputJsonValue;
     const theme = await prisma.storeTheme.upsert({
       where: { storeId: req.store!.id },
-      create: { storeId: req.store!.id, ...data },
-      update: data,
+      create: { storeId: req.store!.id, ...data, settings },
+      update: { ...data, settings },
     });
     res.json(theme);
   }),
@@ -168,6 +186,9 @@ myStoreRouter.put(
     } else {
       const blocking = dependents(key, current);
       if (blocking.length) throw new HttpError(409, `Turn off ${blocking.map((m) => MODULES[m].label).join(", ")} first`);
+      if (key === "inventory" && (await prisma.productVariant.count({ where: { product: { storeId: req.store!.id } } })) > 0) {
+        throw new HttpError(409, "Some products have variants. Remove their options before turning off Inventory.");
+      }
     }
 
     await prisma.storeModule.upsert({
@@ -296,8 +317,12 @@ const publicStoreSelect = {
 async function findPublicStore(where: Prisma.StoreWhereUniqueInput) {
   const store = await prisma.store.findUnique({ where, select: { ...publicStoreSelect, status: true } });
   if (!store || store.status === "suspended") throw new HttpError(404, "Store not found");
+  const modules = await activeModules(store.id);
   // Draft stores are viewable (so owners can preview them) but can't take orders.
-  return store;
+  return {
+    ...store,
+    features: { shipping: modules.has("shipping"), discounts: modules.has("discounts"), analytics: modules.has("analytics") },
+  };
 }
 
 /** Resolves a custom domain to its store; the storefront middleware calls this for non-platform hosts. */

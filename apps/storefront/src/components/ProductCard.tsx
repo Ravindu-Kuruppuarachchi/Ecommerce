@@ -3,14 +3,26 @@ import { formatMoney } from "@repo/core";
 import type { Product } from "@/lib/types";
 import AddToCartButton from "./AddToCartButton";
 
-export default function ProductCard({ product, storeSlug, currency }: { product: Product; storeSlug: string; currency: string }) {
+interface Props {
+  product: Product;
+  storeSlug: string;
+  currency: string;
+  /** Theme setting: show an add-to-cart button on the card. */
+  quickAdd: boolean;
+}
+
+export default function ProductCard({ product, storeSlug, currency, quickAdd }: Props) {
   const image = product.images[0];
   const href = `/${storeSlug}/product/${product.slug}`;
-  const onSale = product.compareAtPriceCents !== null && product.compareAtPriceCents > product.priceCents;
+  // Variant prices can differ; show the lowest as "From".
+  const prices = product.variants.length ? product.variants.map((v) => v.priceCents ?? product.priceCents) : [product.priceCents];
+  const from = Math.min(...prices);
+  const varies = new Set(prices).size > 1;
+  const onSale = !varies && product.compareAtPriceCents !== null && product.compareAtPriceCents > from;
 
   return (
     <article className="group flex flex-col">
-      <Link href={href} className="relative block aspect-[4/5] overflow-hidden rounded-lg bg-store-surface">
+      <Link href={href} className="relative block aspect-product overflow-hidden rounded-media bg-store-surface">
         {image && (
           <img
             src={image.url}
@@ -25,10 +37,13 @@ export default function ProductCard({ product, storeSlug, currency }: { product:
           {product.name}
         </Link>
         <p className="text-sm">
-          <span className={onSale ? "text-store-accent font-medium" : "text-store-muted"}>{formatMoney(product.priceCents, currency)}</span>
+          <span className={onSale ? "text-store-accent font-medium" : "text-store-muted"}>
+            {varies && "From "}
+            {formatMoney(from, currency)}
+          </span>
           {onSale && <s className="ml-2 text-store-muted">{formatMoney(product.compareAtPriceCents!, currency)}</s>}
         </p>
-        <AddToCartButton product={product} className="mt-auto pt-3 [&_.btn-primary]:py-2.5" />
+        {quickAdd && <AddToCartButton product={product} storeSlug={storeSlug} className="mt-auto pt-3" />}
       </div>
     </article>
   );

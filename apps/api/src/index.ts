@@ -4,10 +4,16 @@ import express, { type ErrorRequestHandler } from "express";
 import helmet from "helmet";
 import { HttpError } from "./lib/http";
 import { authRouter } from "./routes/auth";
+import { analyticsRouter } from "./routes/analytics";
 import { customersRouter } from "./routes/customers";
+import { discountsRouter } from "./routes/discounts";
+import { inventoryRouter } from "./routes/inventory";
 import { financeRouter } from "./routes/finance";
 import { ordersRouter } from "./routes/orders";
+import { platformRouter } from "./routes/platform";
 import { productsRouter } from "./routes/products";
+import { shippingRouter } from "./routes/shipping";
+import { storefrontRouter } from "./routes/storefront";
 import { myStoreRouter, publicStoreRouter, templatesRouter } from "./routes/stores";
 import { uploadsRouter } from "./routes/uploads";
 
@@ -39,10 +45,16 @@ app.use("/api/auth", authRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/stores/me", myStoreRouter); // before /:slug; "me" is a reserved store slug
 app.use("/api/stores", publicStoreRouter);
+app.use("/api/stores", storefrontRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/uploads", uploadsRouter);
+app.use("/api/shipping", shippingRouter);
+app.use("/api/discounts", discountsRouter);
+app.use("/api/inventory", inventoryRouter);
+app.use("/api/analytics", analyticsRouter);
+app.use("/api/platform", platformRouter);
 app.use("/api", financeRouter);
 
 app.use((_req, res) => {

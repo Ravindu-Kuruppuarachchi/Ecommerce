@@ -22,7 +22,10 @@ export type SectionType =
   | "image-with-text"
   | "rich-text"
   | "testimonials"
-  | "newsletter";
+  | "newsletter"
+  | "faq"
+  | "selling-points"
+  | "promo-tiles";
 
 export interface SectionDefinition {
   type: SectionType;
@@ -36,6 +39,14 @@ export interface Section {
   type: SectionType;
   props: Record<string, unknown>;
 }
+
+/** Every section except the hero (which has its own image) can change its colour scheme. */
+export const BACKGROUND_FIELD: FieldDefinition = {
+  kind: "select",
+  name: "background",
+  label: "Colour scheme",
+  options: ["default", "subtle", "accent", "inverse"],
+};
 
 const alignment: FieldDefinition = { kind: "select", name: "align", label: "Alignment", options: ["left", "center"] };
 
@@ -80,6 +91,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       { kind: "text", name: "category", label: "Category (when showing a category)", maxLength: 60 },
       { kind: "number", name: "limit", label: "Number of products", min: 2, max: 24 },
       { kind: "select", name: "columns", label: "Columns", options: ["2", "3", "4"] },
+      BACKGROUND_FIELD,
     ],
     defaults: { heading: "Featured", source: "newest", category: "", limit: 8, columns: "4" },
   },
@@ -99,6 +111,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
           { kind: "image", name: "image", label: "Image" },
         ],
       },
+      BACKGROUND_FIELD,
     ],
     defaults: { heading: "Shop by category", items: [] },
   },
@@ -110,6 +123,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       { kind: "text", name: "heading", label: "Heading", maxLength: 80 },
       { kind: "textarea", name: "body", label: "Text", maxLength: 1000 },
       { kind: "select", name: "imagePosition", label: "Image position", options: ["left", "right"] },
+      BACKGROUND_FIELD,
     ],
     defaults: { image: "", heading: "Our story", body: "Tell customers who you are and what you make.", imagePosition: "left" },
   },
@@ -120,6 +134,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       { kind: "text", name: "heading", label: "Heading", maxLength: 80 },
       { kind: "textarea", name: "body", label: "Text", maxLength: 4000 },
       alignment,
+      BACKGROUND_FIELD,
     ],
     defaults: { heading: "", body: "", align: "left" },
   },
@@ -138,8 +153,9 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
           { kind: "text", name: "author", label: "Name", maxLength: 60 },
         ],
       },
+      BACKGROUND_FIELD,
     ],
-    defaults: { heading: "What customers say", items: [] },
+    defaults: { heading: "What customers say", items: [], background: "subtle" },
   },
   newsletter: {
     type: "newsletter",
@@ -147,8 +163,79 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
     fields: [
       { kind: "text", name: "heading", label: "Heading", maxLength: 60 },
       { kind: "textarea", name: "body", label: "Text", maxLength: 240 },
+      BACKGROUND_FIELD,
     ],
     defaults: { heading: "Stay in the loop", body: "New drops and offers, straight to your inbox." },
+  },
+  faq: {
+    type: "faq",
+    label: "Questions and answers",
+    fields: [
+      { kind: "text", name: "heading", label: "Heading", maxLength: 60 },
+      {
+        kind: "list",
+        name: "items",
+        label: "Questions",
+        maxItems: 12,
+        fields: [
+          { kind: "text", name: "question", label: "Question", maxLength: 160 },
+          { kind: "textarea", name: "answer", label: "Answer", maxLength: 1200 },
+        ],
+      },
+      BACKGROUND_FIELD,
+    ],
+    defaults: {
+      heading: "Questions",
+      items: [
+        { question: "How do I pay?", answer: "Pay in cash to the courier when your order arrives." },
+        { question: "How long does delivery take?", answer: "It depends on your district. You'll see the estimate at checkout." },
+      ],
+    },
+  },
+  "selling-points": {
+    type: "selling-points",
+    label: "Selling points",
+    fields: [
+      { kind: "text", name: "heading", label: "Heading (optional)", maxLength: 60 },
+      {
+        kind: "list",
+        name: "items",
+        label: "Points",
+        maxItems: 4,
+        fields: [
+          { kind: "text", name: "title", label: "Title", maxLength: 40 },
+          { kind: "textarea", name: "body", label: "Text", maxLength: 160 },
+        ],
+      },
+      BACKGROUND_FIELD,
+    ],
+    defaults: {
+      heading: "",
+      items: [
+        { title: "Cash on delivery", body: "Pay when your order reaches your door." },
+        { title: "Delivered to your door", body: "Delivery cost and timing for your district are shown at checkout." },
+      ],
+    },
+  },
+  "promo-tiles": {
+    type: "promo-tiles",
+    label: "Promo tiles",
+    fields: [
+      {
+        kind: "list",
+        name: "items",
+        label: "Tiles",
+        maxItems: 3,
+        fields: [
+          { kind: "image", name: "image", label: "Image" },
+          { kind: "text", name: "heading", label: "Heading", maxLength: 60 },
+          { kind: "text", name: "linkLabel", label: "Link label", maxLength: 30 },
+          { kind: "url", name: "link", label: "Link" },
+        ],
+      },
+      BACKGROUND_FIELD,
+    ],
+    defaults: { items: [] },
   },
 };
 

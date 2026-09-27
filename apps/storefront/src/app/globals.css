@@ -16,16 +16,24 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md bg-store-accent px-6 py-3 text-sm font-semibold text-store-on-accent transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control bg-store-accent px-6 py-3 text-sm font-semibold text-store-on-accent transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary:hover:not(:disabled) {
     filter: brightness(0.92);
   }
+  /* Outline button style (theme setting). */
+  [data-buttons="outline"] .btn-primary {
+    @apply border-[1.5px] border-store-fg bg-transparent text-store-fg;
+  }
+  [data-buttons="outline"] .btn-primary:hover:not(:disabled) {
+    @apply bg-store-fg text-store-bg;
+    filter: none;
+  }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-store-line px-6 py-3 text-sm font-semibold text-store-fg transition hover:bg-store-surface active:translate-y-px;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control border border-store-line px-6 py-3 text-sm font-semibold text-store-fg transition hover:bg-store-surface active:translate-y-px;
   }
   .field {
-    @apply w-full rounded-md border border-store-line bg-store-bg px-3.5 py-2.5 text-sm text-store-fg placeholder:text-store-muted focus:border-store-fg focus:outline-none;
+    @apply w-full rounded-control border border-store-line bg-store-bg px-3.5 py-2.5 text-sm text-store-fg placeholder:text-store-muted focus:border-store-fg focus:outline-none;
   }
   .field-label {
     @apply mb-1.5 block text-sm font-medium text-store-fg;

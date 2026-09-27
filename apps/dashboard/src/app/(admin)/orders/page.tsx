@@ -12,6 +12,7 @@ interface OrderItem {
   quantity: number;
   unitPriceCents: number;
   productName: string;
+  variantTitle: string | null;
 }
 
 interface Order {
@@ -22,6 +23,12 @@ interface Order {
   subtotalCents: number;
   taxCents: number;
   shippingCents: number;
+  discountCents: number;
+  discountTitle: string | null;
+  discountCode: string | null;
+  shippingZoneName: string | null;
+  courier: string | null;
+  trackingNumber: string | null;
   platformFeeCents: number;
   merchantNetCents: number;
   status: string;
@@ -48,6 +55,26 @@ const NEXT_STATUS: Record<string, string[]> = {
 const FULFILLMENT_OPTIONS = ["unfulfilled", "packed", "shipped", "delivered", "returned"];
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = { cod: "Cash on delivery", card: "Card", bank_transfer: "Bank transfer" };
+
+function TrackingEditor({ order, onSave }: { order: Order; onSave: (change: { courier: string | null; trackingNumber: string | null }) => void }) {
+  const [courier, setCourier] = useState(order.courier ?? "");
+  const [tracking, setTracking] = useState(order.trackingNumber ?? "");
+  const dirty = courier !== (order.courier ?? "") || tracking !== (order.trackingNumber ?? "");
+  return (
+    <div>
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Delivery tracking</h4>
+      <div className="space-y-2">
+        <input aria-label="Courier" value={courier} onChange={(e) => setCourier(e.target.value)} placeholder="Courier, e.g. Domex" className="input-field text-sm" />
+        <input aria-label="Tracking number" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Tracking number" className="input-field text-sm" />
+        {dirty && (
+          <button type="button" onClick={() => onSave({ courier: courier.trim() || null, trackingNumber: tracking.trim() || null })} className="btn-secondary w-full text-xs">
+            Save tracking
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -174,7 +201,10 @@ export default function OrdersPage() {
                           <div className="space-y-2">
                             {order.items.map((item) => (
                               <div key={item.id} className="flex justify-between text-sm bg-white rounded-lg px-3 py-2 border border-gray-100">
-                                <span className="text-gray-700">{item.productName} × {item.quantity}</span>
+                                <span className="text-gray-700">
+                                  {item.productName}
+                                  {item.variantTitle && <span className="text-gray-500"> ({item.variantTitle})</span>} × {item.quantity}
+                                </span>
                                 <span className="font-semibold text-gray-900">{formatMoney(item.unitPriceCents * item.quantity, order.currency)}</span>
                               </div>
                             ))}
@@ -184,8 +214,13 @@ export default function OrdersPage() {
                             <div className="flex justify-between text-xs text-gray-500 px-3">
                               <span>Tax</span><span>{formatMoney(order.taxCents, order.currency)}</span>
                             </div>
+                            {order.discountCents > 0 && (
+                              <div className="flex justify-between text-xs text-gray-500 px-3">
+                                <span>Discount: {order.discountCode ?? order.discountTitle}</span><span>−{formatMoney(order.discountCents, order.currency)}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between text-xs text-gray-500 px-3">
-                              <span>Delivery</span><span>{formatMoney(order.shippingCents, order.currency)}</span>
+                              <span>Delivery{order.shippingZoneName && ` (${order.shippingZoneName})`}{order.shippingCents === 0 && order.discountTitle && order.discountCents === 0 && `, ${order.discountTitle}`}</span><span>{formatMoney(order.shippingCents, order.currency)}</span>
                             </div>
                             <div className="flex justify-between text-sm font-bold text-gray-900 px-3 pt-1 border-t border-gray-100">
                               <span>Total</span><span>{formatMoney(order.totalCents, order.currency)}</span>
@@ -230,6 +265,8 @@ export default function OrdersPage() {
                               {[order.status, ...(NEXT_STATUS[order.status] ?? [])].map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                             </select>
                           </div>
+
+                          <TrackingEditor order={order} onSave={(change) => applyChange(order.id, () => orderApi.updateStatus(order.id, change), "Tracking saved")} />
 
                           <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Fulfillment</h4>

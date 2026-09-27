@@ -19,6 +19,7 @@ const TYPE_LABEL: Record<string, string> = {
   refund: "Refund",
   fee_reversal: "Fee refunded",
   payout: "Payout to your bank",
+  fee_payment: "Fee payment received",
   adjustment: "Adjustment",
 };
 

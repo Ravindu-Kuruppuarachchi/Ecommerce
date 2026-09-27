@@ -9,6 +9,14 @@ type Values = Record<string, unknown>;
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
+// Friendlier names for option values that aren't self-explanatory.
+const OPTION_LABELS: Record<string, string> = {
+  default: "Page colours",
+  subtle: "Subtle tint",
+  accent: "Accent colour",
+  inverse: "Inverted",
+};
+
 function ImageField({ field, value, onChange, id }: { field: FieldDefinition; value: string; onChange: (v: string) => void; id: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -161,7 +169,7 @@ function Field({ field, value, onChange }: { field: FieldDefinition; value: unkn
           {label}
           <select id={id} value={str(value) || field.options[0]} onChange={(e) => onChange(e.target.value)} className="input-field">
             {field.options.map((o) => (
-              <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+              <option key={o} value={o}>{OPTION_LABELS[o] ?? o.charAt(0).toUpperCase() + o.slice(1)}</option>
             ))}
           </select>
         </div>

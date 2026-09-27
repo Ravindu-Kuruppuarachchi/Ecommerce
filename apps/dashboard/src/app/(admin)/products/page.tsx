@@ -16,8 +16,13 @@ interface Product {
   category?: string;
   sku?: string;
   images: Array<{ url: string; alt?: string }>;
+  variants: Array<{ quantity: number }>;
+  status: string;
   createdAt: string;
 }
+
+/** Total stock, summed across variants when the product has them. */
+const stockOf = (p: Product) => (p.variants.length ? p.variants.reduce((n, v) => n + v.quantity, 0) : p.quantity);
 
 export default function ProductsListPage() {
   const router = useRouter();
@@ -206,16 +211,16 @@ export default function ProductsListPage() {
                       <td className="py-3.5 px-6">
                         <span
                           className={`badge ${
-                            product.quantity === 0
+                            stockOf(product) === 0
                               ? "badge-red"
-                              : product.quantity < 10
+                              : stockOf(product) < 10
                               ? "badge-yellow"
                               : "badge-green"
                           }`}
                         >
-                          {product.quantity === 0
+                          {stockOf(product) === 0
                             ? "Out of stock"
-                            : `${product.quantity} in stock`}
+                            : `${stockOf(product)} in stock${product.variants.length ? ` · ${product.variants.length} variants` : ""}`}
                         </span>
                       </td>
                       <td className="py-3.5 px-6 text-sm text-gray-500 font-mono">

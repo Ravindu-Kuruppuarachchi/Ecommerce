@@ -7,6 +7,8 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  /** "merchant" or "platform_admin". The API enforces access; the UI only uses this for routing. */
+  role?: string;
 }
 
 export interface Store {

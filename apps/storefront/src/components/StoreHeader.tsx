@@ -59,12 +59,12 @@ function Search({ store, onDone }: { store: PublicStore; onDone: () => void }) {
                   <Link
                     href={`/${store.slug}/product/${p.slug}`}
                     onClick={onDone}
-                    className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-store-surface"
+                    className="flex items-center gap-3 rounded-control px-2 py-2 hover:bg-store-surface"
                   >
                     {p.images[0] ? (
-                      <img src={p.images[0].url} alt="" className="h-10 w-10 rounded-md object-cover" />
+                      <img src={p.images[0].url} alt="" className="h-10 w-10 rounded-control object-cover" />
                     ) : (
-                      <span className="h-10 w-10 rounded-md bg-store-surface" />
+                      <span className="h-10 w-10 rounded-control bg-store-surface" />
                     )}
                     <span className="flex-1 truncate text-sm text-store-fg">{p.name}</span>
                     <span className="text-sm text-store-muted">{formatMoney(p.priceCents, store.currency)}</span>
@@ -94,7 +94,7 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
 
   const brand = (
     <Link href={`/${store.slug}`} className="flex min-w-0 items-center gap-3">
-      {store.logo && <img src={store.logo} alt="" className="h-8 w-8 rounded-md object-contain" />}
+      {store.logo && <img src={store.logo} alt="" className="h-8 w-8 rounded-control object-contain" />}
       <span className={`truncate font-heading font-semibold tracking-tight ${style === "premium" ? "text-2xl" : "text-lg"}`}>
         {store.name}
       </span>
@@ -122,7 +122,7 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
         onClick={() => setSearchOpen((v) => !v)}
         aria-expanded={searchOpen}
         aria-label="Search"
-        className="rounded-md p-2.5 text-store-fg hover:bg-store-surface"
+        className="rounded-control p-2.5 text-store-fg hover:bg-store-surface"
       >
         <MagnifyingGlass size={20} />
       </button>
@@ -130,7 +130,7 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
         type="button"
         onClick={cart.open}
         aria-label={`Cart, ${cart.count} ${cart.count === 1 ? "item" : "items"}`}
-        className="relative rounded-md p-2.5 text-store-fg hover:bg-store-surface"
+        className="relative rounded-control p-2.5 text-store-fg hover:bg-store-surface"
       >
         <ShoppingBag size={20} />
         {cart.count > 0 && (
@@ -144,7 +144,7 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
         onClick={() => setMenuOpen((v) => !v)}
         aria-expanded={menuOpen}
         aria-label="Menu"
-        className="rounded-md p-2.5 text-store-fg hover:bg-store-surface md:hidden"
+        className="rounded-control p-2.5 text-store-fg hover:bg-store-surface md:hidden"
       >
         {menuOpen ? <X size={20} /> : <List size={20} />}
       </button>
@@ -173,7 +173,7 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
       {menuOpen && (
         <nav aria-label="Store" className="border-t border-store-line px-4 py-3 md:hidden">
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="block rounded-md px-2 py-2.5 text-base text-store-fg hover:bg-store-surface">
+            <Link key={l.href} href={l.href} className="block rounded-control px-2 py-2.5 text-base text-store-fg hover:bg-store-surface">
               {l.label}
             </Link>
           ))}
