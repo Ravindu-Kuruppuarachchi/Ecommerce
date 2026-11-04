@@ -20,7 +20,7 @@ export interface PublicStore {
   taxBps: number;
   status: "draft" | "live" | "suspended";
   theme: StoreTheme | null;
-  pages: Array<{ slug: string; title: string }>;
+  pages: Array<{ slug: string; title: string; showInNavigation?: boolean; navigationPosition?: number; category?: string | null }>;
   /** Optional modules the storefront needs to know about. */
   features: { shipping: boolean; discounts: boolean; analytics: boolean };
 }
@@ -56,6 +56,7 @@ export interface PublishedPage {
 
 /** Everything a section needs besides its own props. */
 export interface SectionContext {
+  category?: string;
   store: PublicStore;
   /** Product lists keyed by productQueryFor(section).key. */
   products: Record<string, Product[]>;

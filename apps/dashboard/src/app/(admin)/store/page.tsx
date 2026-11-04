@@ -1,20 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowSquareOut, Trash, Warning } from "@phosphor-icons/react";
-import { contrastRatio, FONT_OPTIONS, HEADER_STYLES, HOME_PAGE_SLUG, normalizeThemeSettings, TEMPLATE_KEYS, TEMPLATES, type TemplateKey, type ThemeSettings } from "@repo/core";
-import { errorMessage, pageApi, storeApi } from "@/lib/api-client";
-import { storefrontUrl } from "@/lib/urls";
+import { ArrowSquareOut, CheckCircle, Palette, SquaresFour, Warning } from "@phosphor-icons/react";
+import { contrastRatio, isTemplateKey, FONT_OPTIONS, HEADER_STYLES, normalizeThemeSettings, SHOP_TYPES, TEMPLATE_KEYS, TEMPLATES, type TemplateKey, type ThemeSettings } from "@repo/core";
+import { errorMessage, storeApi } from "@/lib/api-client";
+import TemplateThumbnail from "@/components/TemplateThumbnail";
+import { STOREFRONT_URL, storefrontUrl } from "@/lib/urls";
 import { useAuthStore } from "@/stores/auth-store";
-
-interface PageRow {
-  slug: string;
-  title: string;
-  publishedAt: string | null;
-  updatedAt: string;
-}
 
 interface Theme {
   primaryColor: string;
@@ -32,81 +25,6 @@ function Card({ title, description, children }: { title: string; description?: s
       {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
       <div className="mt-5">{children}</div>
     </section>
-  );
-}
-
-function PagesCard({ storeSlug }: { storeSlug: string }) {
-  const router = useRouter();
-  const [pages, setPages] = useState<PageRow[] | null>(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    pageApi.list().then((res) => setPages(res.data)).catch((err) => setError(errorMessage(err)));
-  }, []);
-
-  const create = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const res = await pageApi.create(newTitle.trim());
-      router.push(`/store/pages/${res.data.slug}`);
-    } catch (err) {
-      setError(errorMessage(err, "Couldn't create the page"));
-    }
-  };
-
-  const remove = async (page: PageRow) => {
-    if (!window.confirm(`Delete "${page.title}"? This can't be undone.`)) return;
-    try {
-      await pageApi.delete(page.slug);
-      setPages((p) => p!.filter((x) => x.slug !== page.slug));
-    } catch (err) {
-      setError(errorMessage(err, "Couldn't delete the page"));
-    }
-  };
-
-  return (
-    <Card title="Pages" description="Each page is built from sections. Edit a page, then publish it when you're happy.">
-      {pages === null ? (
-        <div className="h-24 animate-pulse rounded-lg bg-gray-100" />
-      ) : (
-        <ul className="divide-y divide-gray-100">
-          {pages.map((page) => (
-            <li key={page.slug} className="flex items-center gap-3 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900">{page.title}</p>
-                <p className="text-xs text-gray-500">
-                  /{page.slug === HOME_PAGE_SLUG ? "" : `pages/${page.slug}`}
-                  {!page.publishedAt && <span className="ml-2 badge badge-yellow">Not published</span>}
-                </p>
-              </div>
-              <a
-                href={storefrontUrl(storeSlug, page.slug === HOME_PAGE_SLUG ? "" : `/pages/${page.slug}`)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`View ${page.title}`}
-                className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
-              >
-                <ArrowSquareOut size={16} />
-              </a>
-              {page.slug !== HOME_PAGE_SLUG && (
-                <button type="button" onClick={() => remove(page)} aria-label={`Delete ${page.title}`} className="rounded-md p-2 text-gray-500 hover:bg-red-50 hover:text-red-600">
-                  <Trash size={16} />
-                </button>
-              )}
-              <Link href={`/store/pages/${page.slug}`} className="btn-secondary px-3 py-1.5 text-xs">Edit</Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={create} className="mt-4 flex gap-2">
-        <label htmlFor="new-page" className="sr-only">New page title</label>
-        <input id="new-page" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New page title, e.g. Delivery info" className="input-field" />
-        <button type="submit" className="btn-primary shrink-0">Add page</button>
-      </form>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-    </Card>
   );
 }
 
@@ -183,7 +101,7 @@ function ThemeCard({ initial }: { initial: Theme }) {
             <label htmlFor="theme-header" className="mb-1.5 block text-sm font-medium text-gray-700">Header style</label>
             <select id="theme-header" value={theme.headerStyle} onChange={set("headerStyle")} className="input-field">
               {HEADER_STYLES.map((h) => (
-                <option key={h} value={h}>{h === "premium" ? "Centred name" : h === "minimal" ? "Compact" : "Standard"}</option>
+                <option key={h} value={h}>{h === "premium" ? "Centred name" : h === "minimal" ? "Compact" : h === "contrast" ? "Contrast masthead" : h === "department" ? "Department store" : "Standard"}</option>
               ))}
             </select>
           </div>
@@ -217,6 +135,9 @@ function ThemeCard({ initial }: { initial: Theme }) {
           />
           Show an &ldquo;Add to cart&rdquo; button on product cards
         </label>
+        <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+          Your header follows the pages in your store. <Link href="/store/pages/home" className="font-medium text-brand-700 underline underline-offset-4">Manage pages and navigation</Link>
+        </div>
         <div className="flex items-center gap-3">
           <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save theme"}</button>
           {message && <p className={`text-sm ${message.ok ? "text-emerald-700" : "text-red-600"}`} role="status">{message.text}</p>}
@@ -227,7 +148,17 @@ function ThemeCard({ initial }: { initial: Theme }) {
 }
 
 function TemplatesCard({ current, onApplied }: { current: string; onApplied: () => void }) {
+  const [filter, setFilter] = useState("All styles");
+  const [query, setQuery] = useState("");
+  const [industry, setIndustry] = useState("All shop types");
   const [confirming, setConfirming] = useState<TemplateKey | null>(null);
+  const confirmation = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (confirming) {
+      confirmation.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      confirmation.current?.focus({ preventScroll: true });
+    }
+  }, [confirming]);
   const [replacePages, setReplacePages] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -247,37 +178,56 @@ function TemplatesCard({ current, onApplied }: { current: string; onApplied: () 
     }
   };
 
+  const visibleTemplates = TEMPLATE_KEYS.filter((key) => {
+    const t = TEMPLATES[key];
+    return (filter === "All styles" || t.style === filter)
+      && (industry === "All shop types" || t.industry === industry)
+      && `${t.name} ${t.industry} ${t.bestFor} ${t.description}`.toLowerCase().includes(query.toLowerCase());
+  });
+
   return (
     <Card title="Templates" description="Switching template changes your theme. Your pages stay as they are unless you choose to replace them.">
-      <div className="grid gap-4 md:grid-cols-3">
-        {TEMPLATE_KEYS.map((key) => {
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter templates by style">
+          {["All styles", "Minimal", "Editorial", "Bold", "Natural", "Sport", "Retail"].map((style) => <button key={style} type="button" aria-pressed={filter === style} onClick={() => setFilter(style)} className={`rounded-full px-3.5 py-2 text-xs font-medium transition ${filter === style ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{style}</button>)}
+        </div>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <select aria-label="Shop type" value={industry} onChange={(e) => setIndustry(e.target.value)} className="input-field sm:!w-52">
+            <option>All shop types</option>
+            {SHOP_TYPES.map((type) => <option key={type}>{type}</option>)}
+          </select>
+          <input type="search" aria-label="Search templates" placeholder="Search by name or business…" value={query} onChange={(e) => setQuery(e.target.value)} className="input-field sm:!w-64" />
+        </div>
+      </div>
+      <p className="mb-4 text-xs text-gray-500" role="status">{visibleTemplates.length} {visibleTemplates.length === 1 ? "design" : "designs"}{industry !== "All shop types" ? ` for ${industry.toLowerCase()}` : " to make your own"}</p>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {visibleTemplates.map((key) => {
           const t = TEMPLATES[key];
           return (
-            <div key={key} className={`flex flex-col rounded-lg border p-4 ${current === key ? "border-brand-600 ring-2 ring-brand-600/15" : "border-gray-200"}`}>
-              <div className="flex h-20 overflow-hidden rounded-md" aria-hidden="true" style={{ background: t.theme.secondaryColor }}>
-                <div className="flex flex-1 flex-col justify-center gap-1.5 px-3">
-                  <span className="h-2 w-3/4 rounded-sm" style={{ background: t.theme.primaryColor }} />
-                  <span className="h-2 w-1/2 rounded-sm opacity-50" style={{ background: t.theme.primaryColor }} />
-                  <span className="mt-1 h-3 w-10 rounded-sm" style={{ background: t.theme.accentColor }} />
+            <div key={key} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border transition ${current === key ? "border-brand-600 ring-2 ring-brand-600/15" : "border-gray-200 hover:border-gray-400"}`}>
+              <a href={`${STOREFRONT_URL}/template-preview/${key}`} target="_blank" rel="noreferrer" aria-label={`Preview ${t.name} in a new tab`} className="block border-b border-gray-100"><TemplateThumbnail templateKey={key} /></a>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex items-center justify-between gap-2"><h3 className="font-semibold text-gray-900">{t.name}</h3><span className="text-xs text-gray-500">{t.style}</span></div>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{t.description}</p>
+                <p className="mb-4 mt-2 flex-1 text-xs leading-relaxed text-gray-500">For {t.bestFor.toLowerCase()}<span className="mt-2 block font-medium text-gray-700">{t.pages.length} ready-to-edit pages</span></p>
+                <div className="mb-4 flex items-center gap-1.5" aria-label="Theme colours">
+                  {[t.theme.secondaryColor, t.theme.primaryColor, t.theme.accentColor].map((color, i) => <span key={i} className="h-4 w-4 rounded-full border border-black/10" style={{ background: color }} />)}
+                  <span className="ml-1 text-[11px] text-gray-500">{t.theme.fontFamily}</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => { setConfirming(key); setReplacePages(false); setError(""); }} className={`${current === key ? "btn-secondary" : "btn-primary"} flex-1 !px-2 !py-2 text-xs`}>{current === key ? "Reapply design" : "Use this design"}</button>
+                  <a href={`${STOREFRONT_URL}/template-preview/${key}`} target="_blank" rel="noreferrer" className="btn-secondary !px-3 !py-2 text-xs">Preview <ArrowSquareOut size={13} /></a>
+                </div>
+                {current === key && <span className="mt-3 text-xs font-medium text-brand-700">Currently applied</span>}
               </div>
-              <p className="mt-3 text-sm font-semibold text-gray-900">{t.name}</p>
-              <p className="mt-1 text-xs text-gray-600">{t.description}</p>
-              <p className="mt-1 flex-1 text-xs text-gray-500">Good for: {t.bestFor.toLowerCase()}</p>
-              {current === key ? (
-                <span className="mt-3 text-xs font-medium text-brand-700">Current template</span>
-              ) : (
-                <button type="button" onClick={() => { setConfirming(key); setReplacePages(false); }} className="btn-secondary mt-3 py-1.5 text-xs">
-                  Use {t.name}
-                </button>
-              )}
             </div>
           );
         })}
       </div>
+      {visibleTemplates.length === 0 && <div className="rounded-xl bg-gray-50 px-6 py-12 text-center"><h3 className="font-semibold text-gray-900">Let&apos;s find a better match</h3><p className="mt-2 text-sm text-gray-500">Try a different search, style or shop type.</p><button type="button" onClick={() => { setQuery(""); setFilter("All styles"); setIndustry("All shop types"); }} className="btn-secondary mt-5">Reset filters</button></div>}
 
       {confirming && (
-        <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4" role="dialog" aria-label="Confirm template change">
+        <div ref={confirmation} tabIndex={-1} className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4" role="region" aria-label="Confirm template change">
           <p className="text-sm font-medium text-gray-900">Switch to {TEMPLATES[confirming].name}?</p>
           <label className="mt-3 flex items-start gap-2 text-sm text-gray-700">
             <input type="checkbox" checked={replacePages} onChange={(e) => setReplacePages(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-gray-300" />
@@ -289,7 +239,7 @@ function TemplatesCard({ current, onApplied }: { current: string; onApplied: () 
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           <div className="mt-4 flex gap-2">
             <button type="button" onClick={apply} disabled={busy} className="btn-primary">{busy ? "Applying…" : "Switch template"}</button>
-            <button type="button" onClick={() => setConfirming(null)} className="btn-secondary">Cancel</button>
+            <button type="button" disabled={busy} onClick={() => setConfirming(null)} className="btn-secondary">Cancel</button>
           </div>
         </div>
       )}
@@ -302,17 +252,18 @@ export default function OnlineStorePage() {
   const [store, setStore] = useState<{ templateKey: string; theme: Theme } | null>(null);
   const [error, setError] = useState("");
   const [version, setVersion] = useState(0);
+  const [panel, setPanel] = useState("designs");
 
   useEffect(() => {
     storeApi.getMe().then((res) => setStore(res.data)).catch((err) => setError(errorMessage(err)));
   }, [version]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Online store</h1>
-          <p className="text-sm text-gray-500">Your template, pages and theme.</p>
+          <p className="text-sm text-gray-500">Build a store that feels like your brand.</p>
         </div>
         {authStore && (
           <a href={storefrontUrl(authStore.slug)} target="_blank" rel="noreferrer" className="btn-secondary">
@@ -325,9 +276,24 @@ export default function OnlineStorePage() {
         <div className="space-y-6">{[0, 1, 2].map((i) => <div key={i} className="h-48 animate-pulse rounded-xl bg-white" />)}</div>
       ) : (
         <div className="space-y-6">
-          <PagesCard key={`pages-${version}`} storeSlug={authStore.slug} />
-          <ThemeCard initial={store.theme} />
-          <TemplatesCard current={store.templateKey} onApplied={() => setVersion((v) => v + 1)} />
+          <div className="grid overflow-hidden rounded-xl border border-gray-200 bg-white md:grid-cols-[1fr_1fr]">
+            <div className="min-w-0 border-b border-gray-200 bg-gray-50 md:border-b-0 md:border-r"><TemplateThumbnail templateKey={isTemplateKey(store.templateKey) ? store.templateKey : "classic"} /></div>
+            <div className="flex flex-col justify-center p-6 sm:p-8">
+              <p className="flex items-center gap-2 text-xs font-medium text-gray-500"><CheckCircle size={16} weight="fill" className="text-emerald-600" />Currently applied</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">{TEMPLATES[store.templateKey as TemplateKey]?.name ?? "Your design"}</h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-500">Your design is the starting point. Add your photos, tell your story and make every page feel like your store.</p>
+              <Link href="/store/pages/home" className="btn-primary mt-6 self-start">Edit storefront <ArrowSquareOut size={16} /></Link>
+            </div>
+          </div>
+          <div role="tablist" aria-label="Store appearance" className="flex gap-6 border-b border-gray-200" onKeyDown={event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault(); const next = event.key === "Home" ? "designs" : event.key === "End" ? "appearance" : panel === "designs" ? "appearance" : "designs";
+            setPanel(next); document.getElementById(`store-tab-${next}`)?.focus();
+          }}>
+            {[["designs", "Design library"], ["appearance", "Colours & style"]].map(([value, label]) => <button key={value} id={`store-tab-${value}`} type="button" role="tab" aria-selected={panel === value} aria-controls={`store-panel-${value}`} tabIndex={panel === value ? 0 : -1} onClick={() => setPanel(value)} className={`inline-flex items-center gap-2 border-b-2 px-1 pb-4 text-sm font-medium ${panel === value ? "border-gray-900 text-gray-900" : "border-transparent text-gray-500 hover:text-gray-900"}`}>{value === "designs" ? <SquaresFour size={18} /> : <Palette size={18} />}{label}</button>)}
+          </div>
+          <div id="store-panel-designs" role="tabpanel" aria-labelledby="store-tab-designs" hidden={panel !== "designs"}><TemplatesCard current={store.templateKey} onApplied={() => setVersion((v) => v + 1)} /></div>
+          <div id="store-panel-appearance" role="tabpanel" aria-labelledby="store-tab-appearance" hidden={panel !== "appearance"}><ThemeCard initial={store.theme} /></div>
         </div>
       )}
     </div>

@@ -1,10 +1,10 @@
 import { Prisma } from "@prisma/client";
-import { TEMPLATES, type TemplateKey } from "@repo/core";
+import { TEMPLATES, isTemplateKey, type TemplateKey } from "@repo/core";
 
 // Slugs become subdomains and URL paths, so reserve anything the platform may need.
 const RESERVED_SLUGS = new Set([
   "admin", "api", "app", "dashboard", "www", "mail", "help", "support", "billing",
-  "login", "register", "signup", "me", "store", "stores", "static", "assets", "cdn",
+  "template-preview", "template-assets", "login", "register", "signup", "me", "store", "stores", "static", "assets", "cdn",
 ]);
 
 export const STORE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
@@ -41,7 +41,7 @@ export async function applyTemplate(
   const template = TEMPLATES[key];
   const now = new Date();
 
-  await tx.store.update({ where: { id: storeId }, data: { templateKey: key } });
+  await tx.store.update({ where: { id: storeId }, data: { templateKey: key, pageSetupVersion: 1 } });
   const { settings, ...tokens } = template.theme;
   const theme = { ...tokens, settings: settings as unknown as Prisma.InputJsonValue };
   await tx.storeTheme.upsert({
@@ -52,11 +52,29 @@ export async function applyTemplate(
 
   for (const page of template.pages) {
     const sections = page.sections as unknown as Prisma.InputJsonValue;
-    const fresh = { title: page.title, draftSections: sections, publishedSections: sections, publishedAt: now };
+    const fresh = { title: page.title, draftSections: sections, publishedSections: sections, publishedAt: now,
+      showInNavigation: page.showInNavigation ?? page.slug !== "home", navigationPosition: page.navigationPosition ?? 0 };
     await tx.storePage.upsert({
       where: { storeId_slug: { storeId, slug: page.slug } },
       create: { storeId, slug: page.slug, ...fresh },
       update: replacePages ? fresh : {},
     });
   }
+}
+
+/** One-time, additive upgrade. Never replace existing content or resurrect later deletions. */
+export async function prepareStorePages(tx: Prisma.TransactionClient, storeId: string) {
+  const store = await tx.store.findUniqueOrThrow({ where: { id: storeId } });
+  if (store.pageSetupVersion >= 1) return;
+  const template = TEMPLATES[isTemplateKey(store.templateKey) ? store.templateKey : "classic"];
+  for (const page of template.pages) {
+    const sections = page.sections as unknown as Prisma.InputJsonValue;
+    const navigation = { showInNavigation: page.showInNavigation ?? page.slug !== "home", navigationPosition: page.navigationPosition ?? 0 };
+    await tx.storePage.upsert({
+      where: { storeId_slug: { storeId, slug: page.slug } },
+      create: { storeId, slug: page.slug, title: page.title, ...navigation, draftSections: sections, publishedSections: sections, publishedAt: new Date() },
+      update: navigation,
+    });
+  }
+  await tx.store.update({ where: { id: storeId }, data: { pageSetupVersion: 1 } });
 }

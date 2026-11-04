@@ -1,14 +1,21 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import {
   adminNav,
+  PRODUCTS_PAGE_SLUG,
+  PAGE_PRESETS,
+  pagePresetSections,
+  catalogCategory,
+  defaultCatalogSections,
+  createSection,
   dependents,
   effectiveModules,
   HOME_PAGE_SLUG,
   BUTTON_STYLES,
   CORNER_STYLES,
   IMAGE_RATIOS,
+  HEADER_STYLES,
   isFontName,
   normalizeThemeSettings,
   isModuleKey,
@@ -26,7 +33,7 @@ import { prisma } from "../lib/prisma";
 import { merchant } from "../middleware/auth";
 import { rateLimit } from "../middleware/rate-limit";
 import { activeModules } from "../services/modules";
-import { applyTemplate, slugify } from "../services/stores";
+import { applyTemplate, prepareStorePages, slugify } from "../services/stores";
 
 // ============ TEMPLATES (public catalog) ============
 
@@ -35,8 +42,8 @@ export const templatesRouter = Router();
 templatesRouter.get("/", (_req, res) => {
   res.json(
     TEMPLATE_KEYS.map((key) => {
-      const { name, description, bestFor, theme, pages } = TEMPLATES[key];
-      return { key, name, description, bestFor, theme, pages: pages.map((p) => ({ slug: p.slug, title: p.title })) };
+      const { name, description, bestFor, industry, style, theme, pages } = TEMPLATES[key];
+      return { key, name, description, bestFor, industry, style, theme, pages: pages.map((p) => ({ slug: p.slug, title: p.title })) };
     }),
   );
 });
@@ -67,13 +74,17 @@ const themeUpdateSchema = z.object({
   secondaryColor: hexColor.optional(),
   accentColor: hexColor.optional(),
   fontFamily: z.string().refine(isFontName, "Pick one of the available fonts").optional(),
-  headerStyle: z.enum(["minimal", "standard", "premium"]).optional(),
+  headerStyle: z.enum(HEADER_STYLES).optional(),
   settings: z
     .object({
       corners: z.enum(CORNER_STYLES),
       buttons: z.enum(BUTTON_STYLES),
       imageRatio: z.enum(IMAGE_RATIOS),
       quickAdd: z.boolean(),
+      navigation: z.array(z.object({
+        label: z.string().trim().min(1).max(40),
+        link: z.string().max(500).regex(/^(\/(?!\/)|https?:\/\/)/i, "Use a store path or https:// link"),
+      })).max(8),
     })
     .partial()
     .optional(),
@@ -220,15 +231,22 @@ async function findPage(storeId: string, slug: string) {
   return page;
 }
 
+/** Make existing system pages editable without replacing merchant content. */
+myStoreRouter.post("/pages/prepare", asyncHandler(async (req, res) => {
+  const storeId = req.store!.id;
+  await prisma.$transaction(tx => prepareStorePages(tx, storeId));
+  res.json({ success: true });
+}));
+
 myStoreRouter.get(
   "/pages",
   asyncHandler(async (req, res) => {
     const pages = await prisma.storePage.findMany({
       where: { storeId: req.store!.id },
-      select: { id: true, slug: true, title: true, publishedAt: true, updatedAt: true },
-      orderBy: { createdAt: "asc" },
+      select: { id: true, slug: true, title: true, publishedAt: true, updatedAt: true, showInNavigation: true, navigationPosition: true, draftSections: true },
+      orderBy: [{ navigationPosition: "asc" }, { createdAt: "asc" }],
     });
-    res.json(pages);
+    res.json(pages.map(({ draftSections, ...page }) => ({ ...page, category: catalogCategory(draftSections) })));
   }),
 );
 
@@ -236,13 +254,17 @@ myStoreRouter.post(
   "/pages",
   asyncHandler(async (req, res) => {
     const body = parseBody(
-      z.object({ title: z.string().trim().min(1).max(80), slug: pageSlugSchema.optional(), sections: z.unknown().default([]) }),
+      z.object({ title: z.string().trim().min(1).max(80), slug: pageSlugSchema.optional(), sections: z.unknown().optional(),
+        preset: z.enum(PAGE_PRESETS).default("blank"), category: z.string().trim().max(60).optional(), showInNavigation: z.boolean().default(true) }),
       req.body,
     );
-    const slug = body.slug ?? slugify(body.title);
+    const slug = parseBody(pageSlugSchema, body.slug ?? slugify(body.title));
+    if (body.preset === "category" && !body.category) throw new HttpError(400, "Choose a product category for this page");
     try {
       const page = await prisma.storePage.create({
-        data: { storeId: req.store!.id, slug, title: body.title, draftSections: sectionsOrThrow(body.sections) },
+        data: { storeId: req.store!.id, slug, title: body.title, showInNavigation: body.showInNavigation,
+          navigationPosition: ((await prisma.storePage.aggregate({ where: { storeId: req.store!.id }, _max: { navigationPosition: true } }))._max.navigationPosition ?? 0) + 1,
+          draftSections: sectionsOrThrow(body.sections ?? pagePresetSections(body.preset, { title: body.title, category: body.category, description: req.store!.description, email: req.store!.email, phone: req.store!.phone })) },
       });
       res.status(201).json(page);
     } catch (error) {
@@ -253,6 +275,20 @@ myStoreRouter.post(
     }
   }),
 );
+
+myStoreRouter.put("/pages/navigation/order", asyncHandler(async (req, res) => {
+  const body = parseBody(z.object({ slugs: z.array(z.string().min(1).max(60)).max(100) }), req.body);
+  const pages = await prisma.storePage.findMany({ where: { storeId: req.store!.id }, select: { slug: true } });
+  if (new Set(body.slugs).size !== body.slugs.length || body.slugs.length !== pages.length || pages.some(page => !body.slugs.includes(page.slug))) throw new HttpError(400, "Choose each of this store's pages once");
+  await prisma.$transaction(body.slugs.map((slug, index) => prisma.storePage.update({ where: { storeId_slug: { storeId: req.store!.id, slug } }, data: { navigationPosition: index } })));
+  res.json({ success: true });
+}));
+
+myStoreRouter.patch("/pages/:slug/navigation", asyncHandler(async (req, res) => {
+  const page = await findPage(req.store!.id, req.params.slug);
+  const body = parseBody(z.object({ showInNavigation: z.boolean() }), req.body);
+  res.json(await prisma.storePage.update({ where: { id: page.id }, data: body }));
+}));
 
 myStoreRouter.get(
   "/pages/:slug",
@@ -290,7 +326,7 @@ myStoreRouter.post(
 myStoreRouter.delete(
   "/pages/:slug",
   asyncHandler(async (req, res) => {
-    if (req.params.slug === HOME_PAGE_SLUG) throw new HttpError(400, "The home page can't be deleted");
+    if ([HOME_PAGE_SLUG, PRODUCTS_PAGE_SLUG].includes(req.params.slug)) throw new HttpError(400, "This built-in page can't be deleted");
     const page = await findPage(req.store!.id, req.params.slug);
     await prisma.storePage.delete({ where: { id: page.id } });
     res.json({ success: true });
@@ -311,7 +347,7 @@ const publicStoreSelect = {
   currency: true,
   taxBps: true,
   theme: true,
-  pages: { where: { publishedAt: { not: null } }, select: { slug: true, title: true } },
+  pages: { where: { publishedAt: { not: null } }, select: { slug: true, title: true, showInNavigation: true, navigationPosition: true, publishedSections: true }, orderBy: [{ navigationPosition: "asc" }, { createdAt: "asc" }] },
 } satisfies Prisma.StoreSelect;
 
 async function findPublicStore(where: Prisma.StoreWhereUniqueInput) {
@@ -321,6 +357,7 @@ async function findPublicStore(where: Prisma.StoreWhereUniqueInput) {
   // Draft stores are viewable (so owners can preview them) but can't take orders.
   return {
     ...store,
+    pages: store.pages.map(({ publishedSections, ...page }) => ({ ...page, category: catalogCategory(publishedSections) })),
     features: { shipping: modules.has("shipping"), discounts: modules.has("discounts"), analytics: modules.has("analytics") },
   };
 }

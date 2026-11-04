@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { z } from "zod";
-import { toMinor } from "@repo/core";
+import { z } from "zod/v3";
 import { env } from "../lib/env";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -13,17 +12,7 @@ import { syncVariants, validateVariants } from "../services/variants";
 
 export const productsRouter = Router();
 
-/** Prices arrive as what the merchant typed ("1250.50") and are stored in cents. */
-const price = z
-  .union([z.string(), z.number()])
-  .transform((v, ctx) => {
-    const cents = toMinor(v);
-    if (cents === null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter a price like 1250 or 1250.50" });
-      return z.NEVER;
-    }
-    return cents;
-  });
+import { moneyInput as price } from "../lib/validation";
 
 const imageSchema = z.object({
   // Plain http is only allowed in development, where uploads are served from localhost.
@@ -174,7 +163,7 @@ productsRouter.patch(
     const storeId = req.store!.id;
     const plan = await variantPlan(storeId, body);
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.product.update({
+      const current = await tx.product.update({
         where: { id: product.id },
         data: {
           ...toData(body),
@@ -185,8 +174,8 @@ productsRouter.patch(
       });
       if (plan) await syncVariants(tx, storeId, product.id, plan.options, plan.variants);
       // Stock edits from the product form go through the log like any other change.
-      if (body.quantity !== undefined && body.quantity !== product.quantity) {
-        await changeStock(tx, { storeId, productId: product.id, change: body.quantity - product.quantity, reason: "correction", note: "Edited on the product page" });
+      if (body.quantity !== undefined && body.quantity !== current.quantity) {
+        await changeStock(tx, { storeId, productId: product.id, change: body.quantity - current.quantity, reason: "correction", note: "Edited on the product page" });
       }
       return tx.product.findUniqueOrThrow({ where: { id: product.id }, include: withImages });
     });
@@ -232,9 +221,9 @@ productsRouter.get(
   asyncHandler(async (req, res) => {
     const storeId = await storeIdForSlug(req.params.slug);
     const { category } = req.query;
-    const limit = Math.min(Number(req.query.limit) || 100, 100);
+    const limit = parseBody(z.coerce.number().int().min(1).max(100), req.query.limit ?? 100);
     const products = await prisma.product.findMany({
-      where: { storeId, status: "active", ...(typeof category === "string" && category && { category }) },
+      where: { storeId, status: "active", ...(typeof category === "string" && category && { category: { equals: category, mode: "insensitive" as const } }) },
       select: publicProductSelect,
       orderBy: { createdAt: "desc" },
       take: limit,

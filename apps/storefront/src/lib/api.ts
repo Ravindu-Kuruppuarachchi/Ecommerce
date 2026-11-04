@@ -9,7 +9,8 @@ export const API_URL =
 const REVALIDATE_SECONDS = 5;
 
 async function get<T>(path: string): Promise<T | null> {
-  const res = await fetch(`${API_URL}${path}`, { next: { revalidate: REVALIDATE_SECONDS } });
+  // Page publishing and menu changes must take effect together on the next visit.
+  const res = await fetch(`${API_URL}${path}`, path.startsWith("/stores/") ? { cache: "no-store" } : { next: { revalidate: REVALIDATE_SECONDS } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API ${res.status} for ${path}`);
   return res.json();

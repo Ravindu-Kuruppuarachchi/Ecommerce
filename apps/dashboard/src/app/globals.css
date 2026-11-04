@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-wght-normal.woff2') format('woff2');
+}
 
 @tailwind base;
 @tailwind components;
@@ -30,7 +36,7 @@
 
   /* Focus ring style for accessibility */
   :focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid #b84000;
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -152,4 +158,9 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

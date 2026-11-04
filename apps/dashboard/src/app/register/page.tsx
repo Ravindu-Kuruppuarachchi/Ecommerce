@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
+import AccountLayout from "@/components/AccountLayout";
+import TemplateThumbnail from "@/components/TemplateThumbnail";
+import { STOREFRONT_URL } from "@/lib/urls";
 import { TEMPLATE_KEYS, TEMPLATES } from "@repo/core";
 
 export default function RegisterPage() {
@@ -11,6 +14,7 @@ export default function RegisterPage() {
   const { register } = useAuthStore();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const [form, setForm] = useState({
     email: "", password: "", confirmPassword: "",
@@ -53,124 +57,84 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-600 text-white flex-col justify-between p-12">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">ShopHub</h1>
-          <p className="text-brand-200 text-sm mt-1">E-Commerce SaaS Platform</p>
-        </div>
-        <div className="space-y-6">
-          <h2 className="text-4xl font-bold leading-tight">
-            Start selling<br />online <span className="text-brand-300">today.</span>
-          </h2>
-          <p className="text-brand-200 max-w-md leading-relaxed">
-            Pick a template, add your products and start taking orders. No monthly fee: we keep 10% of each sale.
-          </p>
-          <div className="flex gap-6 pt-2">
-            <div className="flex items-center gap-2 text-sm text-brand-200">
-              <span className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
-              No monthly fee
-            </div>
-            <div className="flex items-center gap-2 text-sm text-brand-200">
-              <span className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
-              No code needed
-            </div>
-            <div className="flex items-center gap-2 text-sm text-brand-200">
-              <span className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
-              Instant setup
-            </div>
-          </div>
-        </div>
-        <p className="text-brand-400 text-xs">&copy; {new Date().getFullYear()} ShopHub</p>
-      </div>
-
-      {/* Right panel — form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-2xl font-extrabold bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">ShopHub</h1>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8">
+    <AccountLayout register>
+          <div className="voxel-account-card">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Create your store</h2>
+              <h1 className="text-2xl font-bold text-gray-900">Create your store</h1>
               <p className="text-gray-500 text-sm mt-1">Set up your account and start selling</p>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm animate-slide-up">{error}</div>
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm animate-slide-up" role="alert">{error}</div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${showTemplates ? "grid-cols-2" : "grid-cols-1"}`}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input type="text" required value={form.firstName} onChange={(e) => setForm({...form, firstName: e.target.value})} className="input-field" placeholder="John" />
+                  <label htmlFor="register-firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input type="text" required id="register-firstName" autoComplete="given-name" value={form.firstName} onChange={(e) => setForm({...form, firstName: e.target.value})} className="input-field" placeholder="John" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input type="text" required value={form.lastName} onChange={(e) => setForm({...form, lastName: e.target.value})} className="input-field" placeholder="Doe" />
+                  <label htmlFor="register-lastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input type="text" required id="register-lastName" autoComplete="family-name" value={form.lastName} onChange={(e) => setForm({...form, lastName: e.target.value})} className="input-field" placeholder="Doe" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" required value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="input-field" placeholder="you@example.com" />
+                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" required id="register-email" autoComplete="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="input-field" placeholder="you@example.com" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${showTemplates ? "grid-cols-2" : "grid-cols-1"}`}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input type="password" required value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="input-field" placeholder="••••••••" />
+                  <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input type="password" required id="register-password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="input-field" placeholder="••••••••" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirm</label>
-                  <input type="password" required value={form.confirmPassword} onChange={(e) => setForm({...form, confirmPassword: e.target.value})} className="input-field" placeholder="••••••••" />
+                  <label htmlFor="register-confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm</label>
+                  <input type="password" required id="register-confirmPassword" autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm({...form, confirmPassword: e.target.value})} className="input-field" placeholder="••••••••" />
                 </div>
               </div>
 
               <hr className="border-gray-100" />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                <input type="text" required value={form.storeName} onChange={(e) => {
+                <label htmlFor="register-storeName" className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                <input type="text" required id="register-storeName" autoComplete="organization" value={form.storeName} onChange={(e) => {
                   setForm({...form, storeName: e.target.value, storeSlug: generateSlug(e.target.value)});
                 }} className="input-field" placeholder="My Awesome Store" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Store URL</label>
+                <label htmlFor="register-storeSlug" className="block text-sm font-medium text-gray-700 mb-1">Store URL</label>
                 <div className="flex items-center">
-                  <span className="text-sm text-gray-400 mr-1">yourplatform.com/</span>
-                  <input type="text" required value={form.storeSlug} onChange={(e) => setForm({...form, storeSlug: generateSlug(e.target.value)})} className="input-field flex-1 font-mono text-sm" placeholder="my-store" />
+                  <span className="text-sm text-gray-500 mr-2 shrink-0 text-xs">{STOREFRONT_URL.replace("https://", "").replace("http://", "")}/</span>
+                  <input type="text" required id="register-storeSlug" autoComplete="off" value={form.storeSlug} onChange={(e) => setForm({...form, storeSlug: generateSlug(e.target.value)})} className="input-field min-w-0 flex-1 font-mono text-sm" placeholder="my-store" />
                 </div>
               </div>
 
               <fieldset>
                 <legend className="block text-sm font-medium text-gray-700 mb-2">Template</legend>
                 <p className="text-xs text-gray-500 mb-3">You can switch or customise it any time.</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {TEMPLATE_KEYS.map((key) => {
+                <div className={`grid gap-3 ${showTemplates ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {(showTemplates ? TEMPLATE_KEYS : TEMPLATE_KEYS.filter((key) => key === form.templateKey)).map((key) => {
                     const t = TEMPLATES[key];
                     const selected = form.templateKey === key;
                     return (
                       <label
                         key={key}
-                        className={`cursor-pointer rounded-lg border p-2 transition ${selected ? "border-brand-600 ring-2 ring-brand-600/20" : "border-gray-200 hover:border-gray-300"}`}
+                        className={`cursor-pointer rounded-lg border p-2 transition focus-within:ring-2 focus-within:ring-brand-600 ${selected ? "border-brand-600 ring-2 ring-brand-600/20" : "border-gray-200 hover:border-gray-300"}`}
                       >
                         <input type="radio" name="template" value={key} checked={selected} onChange={() => setForm({ ...form, templateKey: key })} className="sr-only" />
-                        <span className="flex h-12 overflow-hidden rounded-md" aria-hidden="true">
-                          <span className="flex-1" style={{ background: t.theme.secondaryColor }} />
-                          <span className="w-4" style={{ background: t.theme.primaryColor }} />
-                          <span className="w-4" style={{ background: t.theme.accentColor }} />
-                        </span>
+                        <span className="block overflow-hidden rounded-md [&>div]:h-28"><TemplateThumbnail templateKey={key} /></span>
                         <span className="mt-1.5 block text-xs font-medium text-gray-900">{t.name}</span>
                       </label>
                     );
                   })}
                 </div>
-                <p className="mt-2 text-xs text-gray-500">{TEMPLATES[form.templateKey as keyof typeof TEMPLATES].bestFor}</p>
+                <button type="button" onClick={() => setShowTemplates((show) => !show)} aria-expanded={showTemplates} className="mt-3 text-xs font-medium text-brand-700 hover:underline">{showTemplates ? "Keep selected design" : `Browse all ${TEMPLATE_KEYS.length} designs`}</button>
+                <p className="mt-3 text-xs text-gray-500">{TEMPLATES[form.templateKey as keyof typeof TEMPLATES].bestFor}</p>
+                <a href={`${STOREFRONT_URL}/template-preview/${form.templateKey}`} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-medium text-brand-700 underline underline-offset-4">Preview {TEMPLATES[form.templateKey as keyof typeof TEMPLATES].name} in a new tab</a>
               </fieldset>
 
               <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 text-base mt-2">
@@ -188,8 +152,6 @@ export default function RegisterPage() {
               <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700 transition-colors">Sign in</Link>
             </p>
           </div>
-        </div>
-      </div>
-    </div>
+    </AccountLayout>
   );
 }

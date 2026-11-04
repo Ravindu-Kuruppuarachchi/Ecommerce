@@ -42,7 +42,13 @@ export const itemKey = (productId: string, variantId?: string) => `${productId}:
 function readCart(storeSlug: string): CartItem[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(cartKey(storeSlug)) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((i) => typeof i?.key === "string" && Number.isInteger(i?.priceCents)) : [];
+    return Array.isArray(parsed) ? parsed.filter((i) =>
+      typeof i?.productId === "string" && typeof i?.name === "string" && typeof i?.slug === "string" &&
+      (i.variantId === undefined || typeof i.variantId === "string") && i.key === itemKey(i.productId, i.variantId) &&
+      Number.isSafeInteger(i.priceCents) && i.priceCents >= 0 && i.priceCents <= 2_147_483_647 &&
+      Number.isInteger(i.quantity) && i.quantity > 0 && i.quantity <= 100 &&
+      Number.isInteger(i.maxQuantity) && i.maxQuantity >= i.quantity
+    ).slice(0, 50) : [];
   } catch {
     return [];
   }
@@ -69,13 +75,15 @@ export function CartProvider({ storeSlug, onAdd, children }: { storeSlug: string
 
   const add = useCallback(
     (item: Omit<CartItem, "quantity" | "key">, quantity = 1) => {
+      if (!Number.isInteger(quantity) || quantity < 1 || item.maxQuantity < 1) return;
       const key = itemKey(item.productId, item.variantId);
       setItems((prev) => {
         const existing = prev.find((i) => i.key === key);
         if (existing) {
-          return prev.map((i) => (i.key === key ? { ...i, ...item, quantity: Math.min(i.quantity + quantity, item.maxQuantity) } : i));
+          return prev.map((i) => (i.key === key ? { ...i, ...item, quantity: Math.min(i.quantity + quantity, item.maxQuantity, 100) } : i));
         }
-        return [...prev, { ...item, key, quantity: Math.min(quantity, item.maxQuantity) }];
+        if (prev.length >= 50) return prev;
+        return [...prev, { ...item, key, quantity: Math.min(quantity, item.maxQuantity, 100) }];
       });
       setIsOpen(true);
       onAdd?.(item.productId);
@@ -84,10 +92,14 @@ export function CartProvider({ storeSlug, onAdd, children }: { storeSlug: string
   );
 
   const setQuantity = useCallback((key: string, quantity: number) => {
+    if (!Number.isInteger(quantity)) return;
     setItems((prev) =>
-      quantity <= 0 ? prev.filter((i) => i.key !== key) : prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(quantity, i.maxQuantity) } : i)),
+      quantity <= 0 ? prev.filter((i) => i.key !== key) : prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(quantity, i.maxQuantity, 100) } : i)),
     );
   }, []);
+
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -96,14 +108,14 @@ export function CartProvider({ storeSlug, onAdd, children }: { storeSlug: string
       count: items.reduce((n, i) => n + i.quantity, 0),
       subtotalCents: items.reduce((n, i) => n + i.priceCents * i.quantity, 0),
       isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
+      open,
+      close,
       add,
       setQuantity,
       remove: (key) => setItems((prev) => prev.filter((i) => i.key !== key)),
       clear: () => setItems([]),
     }),
-    [items, ready, isOpen, add, setQuantity],
+    [items, ready, isOpen, add, setQuantity, open, close],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -27,6 +27,7 @@ import {
 import type { ModuleKey } from "@repo/core";
 import { storeApi } from "@/lib/api-client";
 import { storefrontUrl } from "@/lib/urls";
+import VoxelBrand from "./VoxelBrand";
 import { useAuthStore, useHasHydrated } from "@/stores/auth-store";
 
 const MODULE_ICONS: Record<ModuleKey, ComponentType<IconProps>> = {
@@ -105,7 +106,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const sidebar = (
     <nav aria-label="Main" className="flex h-full flex-col">
       <div className="border-b border-gray-100 px-5 py-5">
-        <p className="text-lg font-bold tracking-tight text-gray-900">ShopHub</p>
+        <Link href="/" aria-label="Voxel Labs home"><VoxelBrand compact /></Link>
         {store && (
           <a
             href={storefrontUrl(store.slug)}
@@ -149,7 +150,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-gray-200 bg-white lg:block">{sidebar}</aside>
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
-        <span className="font-bold tracking-tight">ShopHub</span>
+        <Link href="/" aria-label="Voxel Labs home"><VoxelBrand compact /></Link>
         <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu" className="rounded-lg p-2 hover:bg-gray-100">
           <List size={22} />
         </button>

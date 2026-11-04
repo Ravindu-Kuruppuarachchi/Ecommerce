@@ -14,13 +14,25 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
 
   useEffect(() => {
     if (!cart.isOpen) return;
-    panelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && cart.close();
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    const panel = panelRef.current;
+    const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]') ?? []);
+    focusable()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); cart.close(); }
+      if (event.key !== "Tab") return;
+      const elements = focusable(); const first = elements[0]; const last = elements[elements.length - 1];
+      if (!elements.length) { event.preventDefault(); panel?.focus(); return; }
+      if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.isConnected && previousFocus.focus();
     };
   }, [cart.isOpen, cart.close]);
 
@@ -28,7 +40,7 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
 
   return (
     <div className="fixed inset-0 z-40">
-      <button type="button" aria-label="Close cart" onClick={cart.close} className="absolute inset-0 bg-black/40" />
+      <button type="button" aria-label="Close cart" tabIndex={-1} onClick={cart.close} className="absolute inset-0 bg-black/40" />
       <div
         ref={panelRef}
         tabIndex={-1}
@@ -38,7 +50,7 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
         className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-store-bg text-store-fg shadow-xl outline-none"
       >
         <div className="flex items-center justify-between border-b border-store-line px-5 py-4">
-          <h2 className="font-heading text-lg font-semibold">Your cart</h2>
+          <h2 className="font-heading text-lg font-semibold">Your cart <span className="ml-2 text-sm font-normal text-store-muted">({cart.count})</span></h2>
           <button type="button" onClick={cart.close} aria-label="Close cart" className="rounded-control p-2 hover:bg-store-surface">
             <X size={20} />
           </button>
@@ -87,7 +99,7 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
                         <button
                           type="button"
                           aria-label={`One more ${item.name}`}
-                          disabled={item.quantity >= item.maxQuantity}
+                          disabled={item.quantity >= Math.min(item.maxQuantity, 100)}
                           onClick={() => cart.setQuantity(item.key, item.quantity + 1)}
                           className="p-2 hover:bg-store-surface disabled:opacity-40"
                         >
@@ -107,10 +119,11 @@ export default function CartDrawer({ store }: { store: PublicStore }) {
                 <span>Subtotal</span>
                 <span>{money(cart.subtotalCents)}</span>
               </div>
-              <p className="mb-4 text-xs text-store-muted">Tax and delivery are calculated at checkout.</p>
+              <p className="mb-4 text-xs leading-relaxed text-store-muted">Tax and delivery are calculated at checkout.</p>
               <Link href={`/${store.slug}/checkout`} onClick={cart.close} className="btn-primary w-full">
-                Checkout
+                Continue to checkout
               </Link>
+              <p className="mt-3 text-center text-xs text-store-muted">Sign in with Google at checkout to keep track of your orders.</p>
             </div>
           </>
         )}

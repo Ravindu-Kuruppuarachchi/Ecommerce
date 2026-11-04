@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { merchant, requireModule } from "../middleware/auth";
@@ -44,24 +44,22 @@ inventoryRouter.post(
       }),
       req.body,
     );
-    const product = await prisma.product.findFirst({
-      where: { id: body.productId, storeId: req.store!.id },
-      include: { variants: { select: { id: true, quantity: true } } },
-    });
-    if (!product) throw new HttpError(404, "Product not found");
-    const variant = body.variantId ? product.variants.find((v) => v.id === body.variantId) : null;
-    if (body.variantId && !variant) throw new HttpError(404, "Variant not found");
-    if (!variant && product.variants.length) throw new HttpError(400, "Adjust this product's stock per variant");
-    if (body.mode === "set" && body.amount < 0) throw new HttpError(400, "Stock can't be negative");
-
-    const current = variant ? variant.quantity : product.quantity;
-    const change = body.mode === "set" ? body.amount - current : body.amount;
-    if (change === 0) return res.json({ quantity: current });
-    const quantity = await prisma.$transaction((tx) =>
-      changeStock(tx, { storeId: req.store!.id, productId: product.id, variantId: variant?.id, change, reason: body.reason, note: body.note }),
-    ).catch((error) => {
-      if (error instanceof HttpError) throw new HttpError(409, `Only ${current} in stock, so you can't remove ${-change}`);
-      throw error;
+    const quantity = await prisma.$transaction(async tx => {
+      // Lock the stock row before computing an absolute count's delta.
+      if (body.variantId) {
+        await tx.$queryRaw`SELECT v.id FROM "ProductVariant" v JOIN "Product" p ON p.id = v."productId" WHERE v.id = ${body.variantId} AND p.id = ${body.productId} AND p."storeId" = ${req.store!.id} FOR UPDATE OF v`;
+      } else {
+        await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${body.productId} AND "storeId" = ${req.store!.id} FOR UPDATE`;
+      }
+      const product = await tx.product.findFirst({ where: { id: body.productId, storeId: req.store!.id }, include: { variants: true } });
+      if (!product) throw new HttpError(404, "Product not found");
+      const variant = body.variantId ? product.variants.find(v => v.id === body.variantId) : null;
+      if (body.variantId && !variant) throw new HttpError(404, "Variant not found");
+      if (!variant && product.variants.length) throw new HttpError(400, "Adjust this product's stock per variant");
+      if (body.mode === "set" && body.amount < 0) throw new HttpError(400, "Stock can't be negative");
+      const current = variant?.quantity ?? product.quantity;
+      const change = body.mode === "set" ? body.amount - current : body.amount;
+      return change === 0 ? current : changeStock(tx, { storeId: req.store!.id, productId: product.id, variantId: variant?.id, change, reason: body.reason, note: body.note });
     });
     res.json({ quantity });
   }),

@@ -102,6 +102,7 @@ export interface ProductOption {
 
 /** Every combination of option values, in option order. */
 export function variantCombinations(options: ProductOption[]): Array<Record<string, string>> {
+  if (!options.length) return [];
   return options.reduce<Array<Record<string, string>>>(
     (combos, option) => combos.flatMap((combo) => option.values.map((value) => ({ ...combo, [option.name]: value }))),
     [{}],

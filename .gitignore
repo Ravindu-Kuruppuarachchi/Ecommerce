@@ -1,16 +1,31 @@
+# Dependencies and build output
 node_modules/
-.next/
+.next*/
 dist/
+build/
 .turbo/
 *.tsbuildinfo
 next-env.d.ts
+coverage/
 
-# Local secrets; copy the matching .env.example
+# All environment variants are private; only templates are committed.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.sql.gz
+*.dump
+backups/
 
-.DS_Store
+# Runtime data, test output and editor metadata
+uploads/
 *.log
 .playwright-cli/
-uploads/
+playwright-report/
+test-results/
+.DS_Store
+.idea/

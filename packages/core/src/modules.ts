@@ -133,7 +133,7 @@ export const MODULES: Record<ModuleKey, ModuleDefinition> = {
 export const MODULE_KEYS = Object.keys(MODULES) as ModuleKey[];
 
 export function isModuleKey(value: string): value is ModuleKey {
-  return value in MODULES;
+  return Object.prototype.hasOwnProperty.call(MODULES, value);
 }
 
 /** Core modules plus the store's enabled optional modules. */

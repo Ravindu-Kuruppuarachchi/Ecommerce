@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import type { z, ZodTypeAny } from "zod";
+import type { z, ZodTypeAny } from "zod/v3";
 
 /** Throw from a handler to send a specific status and message. */
 export class HttpError extends Error {

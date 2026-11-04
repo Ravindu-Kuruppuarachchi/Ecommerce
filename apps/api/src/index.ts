@@ -4,6 +4,7 @@ import express, { type ErrorRequestHandler } from "express";
 import helmet from "helmet";
 import { HttpError } from "./lib/http";
 import { authRouter } from "./routes/auth";
+import { customerAuthRouter } from "./routes/customer-auth";
 import { analyticsRouter } from "./routes/analytics";
 import { customersRouter } from "./routes/customers";
 import { discountsRouter } from "./routes/discounts";
@@ -19,16 +20,17 @@ import { uploadsRouter } from "./routes/uploads";
 
 const app = express();
 
-// Behind one reverse proxy in production, so req.ip is the client, not the proxy.
-app.set("trust proxy", 1);
+// Only trust a proxy when explicitly configured for the deployment topology.
+app.set("trust proxy", env.trustProxy);
 app.use(helmet());
 app.use(
   cors({
-    origin: env.isProduction ? env.corsOrigins : [...env.corsOrigins, "http://localhost:3000", "http://localhost:3001"],
+    origin: env.isProduction ? env.corsOrigins : [...env.corsOrigins, "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
     credentials: true,
   }),
 );
 app.use(express.json({ limit: "1mb" }));
+app.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 
 // Uploaded images are embedded by the storefront and dashboard on other origins.
 app.use(
@@ -42,6 +44,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/customer-auth", customerAuthRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/stores/me", myStoreRouter); // before /:slug; "me" is a reserved store slug
 app.use("/api/stores", publicStoreRouter);

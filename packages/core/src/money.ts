@@ -19,7 +19,8 @@ export function toMinor(input: string | number): number | null {
   const text = String(input).replace(/,/g, "").trim();
   if (!/^\d+(\.\d{1,2})?$/.test(text)) return null;
   const [whole, fraction = ""] = text.split(".");
-  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(cents) && cents <= 2_147_483_647 ? cents : null;
 }
 
 /** Minor units to a plain decimal string for form inputs, e.g. 125050 -> "1250.50". */

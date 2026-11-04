@@ -3,6 +3,7 @@
 import { useCallback, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { CartProvider } from "@/lib/cart";
+import { CustomerProvider } from "@/lib/customer";
 import { track } from "@/lib/track";
 import type { PublicStore } from "@/lib/types";
 import CartDrawer from "./CartDrawer";
@@ -20,6 +21,7 @@ export default function StoreShell({ store, children }: { store: PublicStore; ch
   const onAdd = useCallback((productId: string) => track(store.slug, "add_to_cart", { productId }), [store.slug]);
 
   return (
+    <CustomerProvider key={store.slug} storeSlug={store.slug}>
     <CartProvider storeSlug={store.slug} onAdd={onAdd}>
       {store.status !== "live" && (
         <p className="bg-store-fg px-4 py-2 text-center text-xs text-store-bg">
@@ -30,5 +32,6 @@ export default function StoreShell({ store, children }: { store: PublicStore; ch
       {children}
       <CartDrawer store={store} />
     </CartProvider>
+    </CustomerProvider>
   );
 }

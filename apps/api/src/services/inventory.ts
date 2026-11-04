@@ -23,7 +23,7 @@ export async function changeStock(tx: Prisma.TransactionClient, c: StockChange):
   let quantityAfter: number;
   if (c.variantId) {
     const res = await tx.productVariant.updateMany({
-      where: { id: c.variantId, productId: c.productId, ...guard },
+      where: { id: c.variantId, productId: c.productId, product: { storeId: c.storeId }, ...guard },
       data: { quantity: { increment: c.change } },
     });
     if (res.count === 0) throw new HttpError(409, "Not enough stock");
