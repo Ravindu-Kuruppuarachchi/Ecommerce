@@ -37,10 +37,12 @@ export function formatMoney(amountMinor: number, currency: string = DEFAULT_CURR
 
 export interface OrderTotals {
   subtotal: number;
+  /** Taken off the goods subtotal. Free-delivery discounts show up as shipping = 0 instead. */
+  discount: number;
   tax: number;
   shipping: number;
   total: number;
-  /** The platform's cut. Charged on the goods subtotal only, since tax and shipping are pass-through. */
+  /** The platform's cut: charged on goods after discounts. Tax and delivery are pass-through. */
   platformFee: number;
   /** What the merchant is owed for this order before any refunds. */
   merchantNet: number;
@@ -51,13 +53,17 @@ export function computeOrderTotals(params: {
   taxBps: number;
   shipping: number;
   platformFeeBps: number;
+  discount?: number;
 }): OrderTotals {
   const subtotal = params.lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-  const tax = applyBps(subtotal, params.taxBps);
-  const total = subtotal + tax + params.shipping;
-  const platformFee = applyBps(subtotal, params.platformFeeBps);
+  const discount = Math.min(params.discount ?? 0, subtotal);
+  const goods = subtotal - discount;
+  const tax = applyBps(goods, params.taxBps);
+  const total = goods + tax + params.shipping;
+  const platformFee = applyBps(goods, params.platformFeeBps);
   return {
     subtotal,
+    discount,
     tax,
     shipping: params.shipping,
     total,

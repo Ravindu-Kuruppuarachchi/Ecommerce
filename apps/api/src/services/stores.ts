@@ -10,7 +10,7 @@ const RESERVED_SLUGS = new Set([
 export const STORE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 
 export function storeSlugProblem(slug: string): string | null {
-  if (!STORE_SLUG_PATTERN.test(slug)) return "Use 3–40 lowercase letters, numbers or hyphens";
+  if (!STORE_SLUG_PATTERN.test(slug)) return "Use 3-40 lowercase letters, numbers or hyphens";
   if (RESERVED_SLUGS.has(slug)) return "That name is reserved";
   return null;
 }
@@ -42,10 +42,12 @@ export async function applyTemplate(
   const now = new Date();
 
   await tx.store.update({ where: { id: storeId }, data: { templateKey: key } });
+  const { settings, ...tokens } = template.theme;
+  const theme = { ...tokens, settings: settings as unknown as Prisma.InputJsonValue };
   await tx.storeTheme.upsert({
     where: { storeId },
-    create: { storeId, ...template.theme },
-    update: template.theme,
+    create: { storeId, ...theme },
+    update: theme,
   });
 
   for (const page of template.pages) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
+import { TEMPLATE_KEYS, TEMPLATES } from "@repo/core";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function RegisterPage() {
     email: "", password: "", confirmPassword: "",
     firstName: "", lastName: "",
     storeName: "", storeSlug: "",
+    templateKey: "classic",
   });
 
   const generateSlug = (name: string) => {
@@ -29,8 +31,8 @@ export default function RegisterPage() {
       setError("Passwords do not match");
       return;
     }
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
     if (!form.storeSlug) {
@@ -40,7 +42,8 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await register(form.email, form.password, form.firstName, form.lastName, form.storeName, form.storeSlug);
+      const { confirmPassword: _confirm, ...input } = form;
+      await register(input);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
@@ -62,12 +65,12 @@ export default function RegisterPage() {
             Start selling<br />online <span className="text-brand-300">today.</span>
           </h2>
           <p className="text-brand-200 max-w-md leading-relaxed">
-            Create your store in minutes. No credit card required. Start with our free plan and upgrade as you grow.
+            Pick a template, add your products and start taking orders. No monthly fee: we keep 10% of each sale.
           </p>
           <div className="flex gap-6 pt-2">
             <div className="flex items-center gap-2 text-sm text-brand-200">
               <span className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
-              Free to start
+              No monthly fee
             </div>
             <div className="flex items-center gap-2 text-sm text-brand-200">
               <span className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
@@ -143,6 +146,32 @@ export default function RegisterPage() {
                   <input type="text" required value={form.storeSlug} onChange={(e) => setForm({...form, storeSlug: generateSlug(e.target.value)})} className="input-field flex-1 font-mono text-sm" placeholder="my-store" />
                 </div>
               </div>
+
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 mb-2">Template</legend>
+                <p className="text-xs text-gray-500 mb-3">You can switch or customise it any time.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {TEMPLATE_KEYS.map((key) => {
+                    const t = TEMPLATES[key];
+                    const selected = form.templateKey === key;
+                    return (
+                      <label
+                        key={key}
+                        className={`cursor-pointer rounded-lg border p-2 transition ${selected ? "border-brand-600 ring-2 ring-brand-600/20" : "border-gray-200 hover:border-gray-300"}`}
+                      >
+                        <input type="radio" name="template" value={key} checked={selected} onChange={() => setForm({ ...form, templateKey: key })} className="sr-only" />
+                        <span className="flex h-12 overflow-hidden rounded-md" aria-hidden="true">
+                          <span className="flex-1" style={{ background: t.theme.secondaryColor }} />
+                          <span className="w-4" style={{ background: t.theme.primaryColor }} />
+                          <span className="w-4" style={{ background: t.theme.accentColor }} />
+                        </span>
+                        <span className="mt-1.5 block text-xs font-medium text-gray-900">{t.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">{TEMPLATES[form.templateKey as keyof typeof TEMPLATES].bestFor}</p>
+              </fieldset>
 
               <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 text-base mt-2">
                 {isLoading ? (

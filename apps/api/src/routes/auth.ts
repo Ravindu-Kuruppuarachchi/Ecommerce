@@ -28,8 +28,8 @@ const loginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
-function publicUser(user: { id: string; email: string; firstName: string | null; lastName: string | null }) {
-  return { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName };
+function publicUser(user: { id: string; email: string; firstName: string | null; lastName: string | null; role: string }) {
+  return { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role };
 }
 
 authRouter.post(

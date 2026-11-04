@@ -6,6 +6,11 @@ import {
   dependents,
   effectiveModules,
   HOME_PAGE_SLUG,
+  BUTTON_STYLES,
+  CORNER_STYLES,
+  IMAGE_RATIOS,
+  isFontName,
+  normalizeThemeSettings,
   isModuleKey,
   isTemplateKey,
   missingRequirements,
@@ -19,6 +24,8 @@ import {
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { merchant } from "../middleware/auth";
+import { rateLimit } from "../middleware/rate-limit";
+import { activeModules } from "../services/modules";
 import { applyTemplate, slugify } from "../services/stores";
 
 // ============ TEMPLATES (public catalog) ============
@@ -50,21 +57,46 @@ const storeUpdateSchema = z.object({
   email: z.string().email().nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
   taxBps: z.number().int().min(0).max(5000).optional(),
+  // "suspended" is set by platform admins only.
+  status: z.enum(["draft", "live"]).optional(),
+  lowStockThreshold: z.number().int().min(0).max(10_000).optional(),
 });
 
 const themeUpdateSchema = z.object({
   primaryColor: hexColor.optional(),
   secondaryColor: hexColor.optional(),
   accentColor: hexColor.optional(),
-  fontFamily: z.string().max(60).regex(/^[\w\s-]+$/).optional(),
+  fontFamily: z.string().refine(isFontName, "Pick one of the available fonts").optional(),
   headerStyle: z.enum(["minimal", "standard", "premium"]).optional(),
+  settings: z
+    .object({
+      corners: z.enum(CORNER_STYLES),
+      buttons: z.enum(BUTTON_STYLES),
+      imageRatio: z.enum(IMAGE_RATIOS),
+      quickAdd: z.boolean(),
+    })
+    .partial()
+    .optional(),
 });
 
 myStoreRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const store = await prisma.store.findUniqueOrThrow({ where: { id: req.store!.id }, include: { theme: true, domains: true } });
-    res.json(store);
+    const [store, productCount, home] = await Promise.all([
+      prisma.store.findUniqueOrThrow({ where: { id: req.store!.id }, include: { theme: true, domains: true } }),
+      prisma.product.count({ where: { storeId: req.store!.id, status: "active" } }),
+      prisma.storePage.findUnique({
+        where: { storeId_slug: { storeId: req.store!.id, slug: HOME_PAGE_SLUG } },
+        select: { createdAt: true, publishedAt: true },
+      }),
+    ]);
+    // Drives the dashboard's launch checklist.
+    const setup = {
+      productCount,
+      homeCustomized: Boolean(home?.publishedAt && home.publishedAt.getTime() - home.createdAt.getTime() > 1000),
+      hasLogo: Boolean(store.logo),
+    };
+    res.json({ ...store, setup });
   }),
 );
 
@@ -72,6 +104,7 @@ myStoreRouter.patch(
   "/",
   asyncHandler(async (req, res) => {
     const data = parseBody(storeUpdateSchema, req.body);
+    if (data.status && req.store!.status === "suspended") throw new HttpError(403, "This store is suspended. Contact support.");
     const store = await prisma.store.update({ where: { id: req.store!.id }, data, include: { theme: true } });
     res.json(store);
   }),
@@ -80,11 +113,14 @@ myStoreRouter.patch(
 myStoreRouter.patch(
   "/theme",
   asyncHandler(async (req, res) => {
-    const data = parseBody(themeUpdateSchema, req.body);
+    const { settings: patch, ...data } = parseBody(themeUpdateSchema, req.body);
+    // Settings merge over what's stored, so the dashboard can change one at a time.
+    const current = await prisma.storeTheme.findUnique({ where: { storeId: req.store!.id }, select: { settings: true } });
+    const settings = normalizeThemeSettings({ ...normalizeThemeSettings(current?.settings), ...patch }) as unknown as Prisma.InputJsonValue;
     const theme = await prisma.storeTheme.upsert({
       where: { storeId: req.store!.id },
-      create: { storeId: req.store!.id, ...data },
-      update: data,
+      create: { storeId: req.store!.id, ...data, settings },
+      update: { ...data, settings },
     });
     res.json(theme);
   }),
@@ -150,6 +186,9 @@ myStoreRouter.put(
     } else {
       const blocking = dependents(key, current);
       if (blocking.length) throw new HttpError(409, `Turn off ${blocking.map((m) => MODULES[m].label).join(", ")} first`);
+      if (key === "inventory" && (await prisma.productVariant.count({ where: { product: { storeId: req.store!.id } } })) > 0) {
+        throw new HttpError(409, "Some products have variants. Remove their options before turning off Inventory.");
+      }
     }
 
     await prisma.storeModule.upsert({
@@ -278,8 +317,12 @@ const publicStoreSelect = {
 async function findPublicStore(where: Prisma.StoreWhereUniqueInput) {
   const store = await prisma.store.findUnique({ where, select: { ...publicStoreSelect, status: true } });
   if (!store || store.status === "suspended") throw new HttpError(404, "Store not found");
-  const { status: _status, ...rest } = store;
-  return rest;
+  const modules = await activeModules(store.id);
+  // Draft stores are viewable (so owners can preview them) but can't take orders.
+  return {
+    ...store,
+    features: { shipping: modules.has("shipping"), discounts: modules.has("discounts"), analytics: modules.has("analytics") },
+  };
 }
 
 /** Resolves a custom domain to its store; the storefront middleware calls this for non-platform hosts. */
@@ -310,5 +353,21 @@ publicStoreRouter.get(
     });
     if (!page?.publishedAt) throw new HttpError(404, "Page not found");
     res.json({ slug: page.slug, title: page.title, sections: page.publishedSections });
+  }),
+);
+
+publicStoreRouter.post(
+  "/:slug/subscribers",
+  rateLimit({ windowMs: 10 * 60_000, max: 10 }),
+  asyncHandler(async (req, res) => {
+    const store = await findPublicStore({ slug: req.params.slug });
+    const { email } = parseBody(z.object({ email: z.string().trim().toLowerCase().email() }), req.body);
+    await prisma.newsletterSubscriber.upsert({
+      where: { storeId_email: { storeId: store.id, email } },
+      create: { storeId: store.id, email },
+      update: {},
+    });
+    // Same response whether or not they were already subscribed.
+    res.status(201).json({ subscribed: true });
   }),
 );

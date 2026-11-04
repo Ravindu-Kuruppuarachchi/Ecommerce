@@ -1,31 +1,32 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      // Every storefront colour comes from the store's theme (see lib/theme.ts).
+      colors: {
+        store: {
+          bg: "var(--s-bg)",
+          fg: "var(--s-fg)",
+          muted: "var(--s-muted)",
+          line: "var(--s-line)",
+          surface: "var(--s-surface)",
+          accent: "var(--s-accent)",
+          "on-accent": "var(--s-on-accent)",
+        },
+      },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        heading: "var(--s-font-heading)",
+        body: "var(--s-font-body)",
       },
-      animation: {
-        'fade-in': 'fadeIn 0.5s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-        'scale-in': 'scaleIn 0.2s ease-out',
+      // Shape rule: controls (buttons, inputs) use rounded-control, images and panels use
+      // rounded-media. Both follow the store's corner style setting.
+      borderRadius: {
+        control: "var(--s-radius-control)",
+        media: "var(--s-radius-media)",
       },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        scaleIn: {
-          '0%': { transform: 'scale(0.95)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
-        },
+      aspectRatio: {
+        product: "var(--s-image-ratio)",
       },
     },
   },

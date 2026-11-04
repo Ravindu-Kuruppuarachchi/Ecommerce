@@ -20,7 +20,10 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push("/dashboard");
+      // Only same-site paths, so ?next= can't be used to bounce users to another site.
+      const next = new URLSearchParams(window.location.search).get("next");
+      const home = useAuthStore.getState().user?.role === "platform_admin" ? "/platform" : "/dashboard";
+      router.push(next && /^\/(?!\/)/.test(next) ? next : home);
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {

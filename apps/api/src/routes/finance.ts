@@ -15,7 +15,11 @@ financeRouter.get(
     const [totalProducts, totalOrders, lowStock, paid] = await Promise.all([
       prisma.product.count({ where: { storeId, status: { not: "archived" } } }),
       prisma.order.count({ where: { storeId } }),
-      prisma.product.count({ where: { storeId, status: "active", quantity: { lt: 10 } } }),
+      // Low stock follows the store's threshold and counts each variant separately.
+      Promise.all([
+        prisma.product.count({ where: { storeId, status: "active", variants: { none: {} }, quantity: { lte: req.store!.lowStockThreshold } } }),
+        prisma.productVariant.count({ where: { product: { storeId, status: "active" }, quantity: { lte: req.store!.lowStockThreshold } } }),
+      ]).then(([products, variants]) => products + variants),
       prisma.order.aggregate({
         where: { storeId, paymentStatus: "paid" },
         _sum: { totalCents: true, platformFeeCents: true },

@@ -1,9 +1,10 @@
 import type { Store } from "@prisma/client";
 import jwt from "jsonwebtoken";
-import { effectiveModules, MODULES, type ModuleKey } from "@repo/core";
+import { MODULES, type ModuleKey } from "@repo/core";
 import { env } from "../lib/env";
 import { asyncHandler, HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import { activeModules } from "../services/modules";
 
 declare global {
   namespace Express {
@@ -49,8 +50,7 @@ export function requireModule(key: ModuleKey) {
   return asyncHandler(async (req, _res, next) => {
     if (!req.store) throw new HttpError(500, "requireModule used without requireStore");
     if (!MODULES[key].core) {
-      const rows = await prisma.storeModule.findMany({ where: { storeId: req.store.id, enabled: true }, select: { key: true } });
-      if (!effectiveModules(rows.map((r) => r.key)).includes(key)) {
+      if (!(await activeModules(req.store.id)).has(key)) {
         throw new HttpError(403, `The ${MODULES[key].label} feature isn't enabled for this store`);
       }
     }
@@ -59,3 +59,16 @@ export function requireModule(key: ModuleKey) {
 }
 
 export const merchant = [requireAuth, requireStore];
+
+/**
+ * Platform staff only. The role is read from the database on every request,
+ * not from the token, so revoking access takes effect immediately.
+ */
+export const requirePlatformAdmin = asyncHandler(async (req, _res, next) => {
+  if (!req.user) throw new HttpError(401, "Unauthorized");
+  const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { role: true } });
+  if (user?.role !== "platform_admin") throw new HttpError(403, "Platform admins only");
+  next();
+});
+
+export const platformAdmin = [requireAuth, requirePlatformAdmin];

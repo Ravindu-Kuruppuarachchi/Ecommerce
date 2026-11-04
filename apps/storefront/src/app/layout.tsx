@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
+import "@/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShopHub Store",
-  description: "Shop premium products from our curated collection.",
+  title: "Store",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
-        {children}
-      </body>
+      <body className="min-h-[100dvh] antialiased">{children}</body>
     </html>
   );
 }

@@ -77,11 +77,11 @@ export const MODULES: Record<ModuleKey, ModuleDefinition> = {
   shipping: {
     key: "shipping",
     label: "Shipping & delivery",
-    description: "Delivery zones, rates and courier bookings.",
+    description: "Delivery zones and rates by district, delivery estimates and tracking numbers.",
     core: false,
     requires: ["orders"],
     nav: [{ label: "Shipping", href: "/shipping" }],
-    available: false,
+    available: true,
   },
   discounts: {
     key: "discounts",
@@ -90,16 +90,16 @@ export const MODULES: Record<ModuleKey, ModuleDefinition> = {
     core: false,
     requires: ["catalog"],
     nav: [{ label: "Discounts", href: "/discounts" }],
-    available: false,
+    available: true,
   },
   inventory: {
     key: "inventory",
     label: "Inventory",
-    description: "Variants, stock tracking and low-stock alerts.",
+    description: "Product variants like size and colour, stock tracking and low-stock alerts.",
     core: false,
     requires: ["catalog"],
     nav: [{ label: "Inventory", href: "/inventory" }],
-    available: false,
+    available: true,
   },
   reviews: {
     key: "reviews",
@@ -113,11 +113,11 @@ export const MODULES: Record<ModuleKey, ModuleDefinition> = {
   analytics: {
     key: "analytics",
     label: "Analytics",
-    description: "Sales, traffic and conversion reports.",
+    description: "Sales, store visits and conversion reports.",
     core: false,
     requires: ["orders"],
     nav: [{ label: "Analytics", href: "/analytics" }],
-    available: false,
+    available: true,
   },
   blog: {
     key: "blog",

@@ -44,29 +44,56 @@ There's no Stripe Connect-style automatic split, so the platform collects and se
 - COD checkout end to end, with the fee posted to the ledger when the merchant marks cash received.
 - Three templates (Classic, Boutique, Bazaar) and 8 section types defined in `@repo/core`.
 
-### Phase 1: Store builder (next)
-- Storefront renders the home page and custom pages from published sections, with one React component per section type; replaces the hard-coded `[store]/page.tsx`.
-- Dashboard "Online store" area: template gallery with previews, section editor (add, reorder, edit fields generated from the section definitions, live preview iframe), publish button, theme colours and fonts.
-- Image uploads (S3-compatible storage, e.g. Cloudflare R2) instead of pasted URLs.
-- Onboarding flow: sign up → pick template → add first product → go live.
-- Admin nav driven by `GET /api/stores/me/modules` and a module picker page.
-- Fix the dashboard auth hydration race: a hard reload on any page redirects to /login.
+### ✅ Phase 1: Store builder (done)
+- Storefront rebuilt around published sections: home, custom pages (`/pages/<slug>`), catalog with category filters, product pages, checkout. Server-rendered, with a 5-second cache.
+- Store theme becomes CSS variables (colours, fonts, header style); button text colour is picked automatically for contrast. Fonts are self-hosted (Fontsource), so builds don't depend on Google Fonts.
+- Dashboard "Online store": pages list (add, edit, delete), theme editor with a contrast warning, template gallery (switch theme, optionally replace pages).
+- Page editor: add, reorder, duplicate and remove sections; forms generated from the section definitions; image upload; live preview in an iframe (desktop and mobile sizes, click a section to edit it); save a draft, then publish.
+- Image uploads (`POST /api/uploads`): PNG, JPEG, WebP and GIF, checked by content, 5 MB limit. Stored on local disk for now.
+- Onboarding: template picked at signup, launch checklist on Home, stores start as drafts and can't take orders until the merchant opens them.
+- Admin menu built from enabled modules; Features page to switch optional modules; Customers and Payouts pages.
+- Newsletter signups stored per store.
+- Fixed: a hard refresh no longer logs merchants out.
+
+Carried forward:
+- Move uploads to S3-compatible storage (Cloudflare R2) before running more than one API instance.
+- Product form still takes image URLs; add the upload button there too.
+- Section defaults include placeholder copy ("Tell customers who you are…") that goes live if a merchant publishes without editing.
+
+### ✅ Store features (done, pulled forward from Phases 4 and 6)
+- **More design options:** 6 templates (Classic, Boutique, Bazaar, Studio, Market, Noir), theme-wide corner style, button style, product image shape and quick-add; per-section colour schemes (page, subtle, accent, inverted); new sections: questions and answers, selling points, promo tiles.
+- **Shipping and delivery:** zones built from the 25 districts with a fee, free-delivery threshold and delivery estimate. Checkout requires a district and the API prices delivery. Orders store the zone, courier and tracking number.
+- **Inventory:** product options and variants with their own stock, SKU and price; an Inventory page with inline stock edits and reasons; every stock movement (sales, cancellations, edits) is logged; low-stock threshold and alerts.
+- **Discounts:** percentage, fixed and free-delivery discounts, as codes or automatic, with minimum spend, dates and usage limits. The best single discount applies; usage limits hold under concurrent checkouts; cancelling an order releases its use. The 10% platform fee is charged on goods after discounts.
+- **Analytics:** a privacy-light storefront tracker (random per-tab id), plus sales, orders, average order, visitors, conversion, a visit-to-order funnel, top products and sales by district for 7/30/90 days.
+
+Carried forward:
+- Courier integrations (Domex, Pronto, Koombiyo): book pickups, print waybills, sync tracking and COD remittances. Needs courier accounts and API access.
+- Analytics events are stored raw; roll them up into daily totals once stores get real traffic.
+- Customer-facing order status page (using the tracking number).
+
+### ✅ Platform admin (done, first part of Phase 3)
+- `platform_admin` users get a separate Platform area (`/platform` in the dashboard). The API re-checks the role from the database on every request.
+- Overview: our revenue (paid vs awaiting payment), total sales, orders, visitors, conversion, store counts, signups, onboarding funnel, what merchants owe us and what we owe them, revenue per day, stores needing attention, top stores.
+- Stores table with period metrics, balance and fee rate; search, status filter, sorting and CSV export.
+- Store detail: trends, features in use, recent orders, ledger, and actions: suspend or reactivate, change fee rate (future orders only), record a fee payment or a payout. Every action needs a reason and goes to the audit log.
+- Visits are now recorded for every store so the platform sees traffic everywhere; merchants still need the Analytics feature to see their own.
+
+Still to do for Phase 3: merchant bank details and a scheduled payout run, multiple admin roles (support vs finance), and email alerts.
 
 ### Phase 2: Payments
 - PayHere checkout for cards: create the payment, redirect, verify `notify_url` with the md5 signature, store the raw event in `PaymentEvent`, then call `recordOrderPaid`.
 - Refunds (full and partial), with `refund` and `fee_reversal` ledger entries.
 - Order emails (confirmation, shipped, delivered) and SMS for Sri Lankan numbers.
 
-### Phase 3: Payouts and platform admin
+### Phase 3: Payouts and platform admin (remaining)
 - Merchant bank details (`PayoutAccount`) with verification.
 - Weekly payout run: create a `Payout` for stores with a positive balance, export a bank-transfer file, mark paid with a reference.
-- Platform admin app: stores, suspend or unsuspend, fee overrides (`platformFeeBps`), ledger adjustments, revenue report.
-- Merchant payouts page (`GET /api/payouts/balance` exists already).
+- Staff roles (support can suspend, finance can record money), and sign-in hardening for staff (2FA).
 
 ### Phase 4: Delivery and logistics
-- `shipping` module: delivery zones by district, flat or weight-based rates, free-delivery thresholds.
+- Weight-based delivery rates.
 - Courier integrations (Domex, Pronto, Koombiyo, etc.): book pickups, print waybills, track, and sync COD remittances back into the ledger.
-- Inventory module: variants (size or colour), per-variant stock, low-stock alerts.
 
 ### Phase 5: Custom domains and hosting
 - Merchant adds a domain → we show the TXT and CNAME records → a background job verifies DNS → issue TLS (Caddy on-demand TLS or Cloudflare for SaaS) → `status = active`.
@@ -75,4 +102,4 @@ There's no Stripe Connect-style automatic split, so the platform collects and se
 - Production build for the API (bundle with esbuild or tsup, since `@repo/core` ships as TypeScript source), Docker images, CI, backups, error monitoring.
 
 ### Phase 6: Growth modules
-- Discounts, reviews, analytics, blog, abandoned-cart emails, SEO (sitemaps, meta tags per page).
+- Reviews, blog, abandoned-cart emails, SEO (sitemaps, meta tags per page).
