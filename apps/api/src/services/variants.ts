@@ -48,7 +48,10 @@ export async function syncVariants(
   options: ProductOption[],
   variants: VariantInput[],
 ): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM "ProductVariant" WHERE "productId" = ${productId} ORDER BY id FOR UPDATE`;
   const existing = await tx.productVariant.findMany({ where: { productId } });
+  const ids = variants.flatMap(v => v.id ? [v.id] : []);
+  if (new Set(ids).size !== ids.length || ids.some(id => !existing.some(v => v.id === id))) throw new HttpError(400, "Choose each variant from this product only once");
   const keep = new Set(variants.map((v) => v.id).filter(Boolean));
   await tx.productVariant.deleteMany({ where: { productId, id: { notIn: [...keep] as string[] } } });
 

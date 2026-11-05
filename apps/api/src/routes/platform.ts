@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { effectiveModules, formatMoney, HOME_PAGE_SLUG, MODULES, toMinor } from "@repo/core";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -356,6 +356,8 @@ platformRouter.post(
     const store = await findStore(req.params.id);
 
     const result = await prisma.$transaction(async (tx) => {
+      // Serialize balance checks so simultaneous transfers cannot spend the same balance.
+      await tx.$queryRaw`SELECT id FROM "Store" WHERE id = ${store.id} FOR UPDATE`;
       const balance = (await tx.ledgerEntry.aggregate({ where: { storeId: store.id }, _sum: { amountCents: true } }))._sum.amountCents ?? 0;
       const base = { storeId: store.id, currency: store.currency, key: `${body.kind}:${randomUUID()}` };
       if (body.kind === "fee_payment") {

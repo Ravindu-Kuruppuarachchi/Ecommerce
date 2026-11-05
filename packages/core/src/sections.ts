@@ -1,3 +1,4 @@
+import { isSafeContentUrl } from "./urls";
 // Storefront pages are stored as an ordered list of sections. Each section
 // type declares its editable fields; the builder renders a form from them and
 // the API validates saved pages against them.
@@ -15,8 +16,11 @@ export type FieldDefinition =
   | { kind: "list"; name: string; label: string; maxItems: number; fields: FieldDefinition[] };
 
 export type SectionType =
+  | "campaign-slider"
+  | "link-strip"
   | "announcement"
   | "hero"
+  | "product-catalog"
   | "featured-products"
   | "category-grid"
   | "image-with-text"
@@ -49,8 +53,45 @@ export const BACKGROUND_FIELD: FieldDefinition = {
 };
 
 const alignment: FieldDefinition = { kind: "select", name: "align", label: "Alignment", options: ["left", "center"] };
+const BUTTONS_FIELD: FieldDefinition = { kind: "list", name: "buttons", label: "Buttons", maxItems: 4, fields: [
+  { kind: "text", name: "label", label: "Button label", maxLength: 30 },
+  { kind: "url", name: "link", label: "Page" },
+  { kind: "select", name: "style", label: "Button style", options: ["primary", "secondary"] },
+] };
 
 export const SECTIONS: Record<SectionType, SectionDefinition> = {
+  "campaign-slider": {
+    type: "campaign-slider", label: "Campaign slideshow",
+    fields: [
+      { kind: "text", name: "label", label: "Accessible slideshow name", maxLength: 60 },
+      { kind: "select", name: "layout", label: "Image layout", options: ["banner", "split"] },
+      { kind: "select", name: "height", label: "Height", options: ["medium", "full"] },
+      { kind: "list", name: "slides", label: "Campaigns", maxItems: 5, fields: [
+        { kind: "text", name: "heading", label: "Heading", maxLength: 80 },
+        { kind: "text", name: "eyebrow", label: "Small heading", maxLength: 50 },
+        { kind: "textarea", name: "body", label: "Description", maxLength: 240 },
+        { kind: "image", name: "image", label: "Campaign image" },
+        { kind: "text", name: "imageAlt", label: "Image description", maxLength: 160 },
+        { kind: "select", name: "imageFocus", label: "Image focal point", options: ["top", "center", "bottom"] },
+        { kind: "text", name: "ctaLabel", label: "Button label", maxLength: 30 },
+        { kind: "url", name: "ctaLink", label: "Button link" },
+        BUTTONS_FIELD,
+      ] },
+    ],
+    defaults: { label: "Latest collections", layout: "banner", height: "medium", slides: [] },
+  },
+  "link-strip": {
+    type: "link-strip", label: "Collection shortcuts",
+    fields: [
+      { kind: "text", name: "heading", label: "Heading (optional)", maxLength: 60 },
+      { kind: "list", name: "items", label: "Links", maxItems: 10, fields: [
+        { kind: "text", name: "label", label: "Label", maxLength: 40 },
+        { kind: "url", name: "link", label: "Destination" },
+      ] },
+      BACKGROUND_FIELD,
+    ],
+    defaults: { heading: "Explore the collection", items: [] },
+  },
   announcement: {
     type: "announcement",
     label: "Announcement bar",
@@ -65,11 +106,21 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
     label: "Hero banner",
     fields: [
       { kind: "text", name: "heading", label: "Heading", maxLength: 80 },
+      { kind: "text", name: "eyebrow", label: "Small heading (optional)", maxLength: 50 },
+      { kind: "select", name: "layout", label: "Image layout", options: ["banner", "overlay", "split", "editorial", "poster", "duo", "spotlight", "mosaic", "panorama", "utility"] },
       { kind: "textarea", name: "subheading", label: "Subheading", maxLength: 240 },
-      { kind: "image", name: "image", label: "Background image" },
+      { kind: "image", name: "image", label: "Main image" },
+      { kind: "text", name: "imageAlt", label: "Image description", maxLength: 160 },
+      { kind: "select", name: "imageFocus", label: "Image focal point", options: ["top", "center", "bottom"] },
+      { kind: "boolean", name: "showSecondaryImage", label: "Show optional small side image (spotlight or mosaic)" },
+      { kind: "image", name: "secondaryImage", label: "Second image (dual, spotlight or mosaic)" },
+      { kind: "text", name: "secondaryImageAlt", label: "Second image description", maxLength: 160 },
+      { kind: "text", name: "secondaryCtaLabel", label: "Second button label", maxLength: 30 },
+      { kind: "url", name: "secondaryCtaLink", label: "Second button link" },
       { kind: "text", name: "ctaLabel", label: "Button label", maxLength: 30 },
       { kind: "url", name: "ctaLink", label: "Button link" },
       alignment,
+      BUTTONS_FIELD,
       { kind: "select", name: "height", label: "Height", options: ["compact", "medium", "full"] },
     ],
     defaults: {
@@ -80,26 +131,52 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
       ctaLink: "/products",
       align: "left",
       height: "medium",
+      layout: "banner",
+      showSecondaryImage: false,
+      eyebrow: "",
+      imageAlt: "",
     },
+  },
+  "product-catalog": {
+    type: "product-catalog", label: "Product catalog",
+    fields: [
+      { kind: "text", name: "category", label: "Product category (leave empty for all products)", maxLength: 60 },
+      { kind: "text", name: "heading", label: "Heading", maxLength: 80 },
+      { kind: "textarea", name: "description", label: "Introduction", maxLength: 500 },
+      { kind: "select", name: "columns", label: "Columns", options: ["2", "3", "4"] },
+      { kind: "boolean", name: "showCategories", label: "Show category filters" },
+      { kind: "boolean", name: "showCount", label: "Show product count" },
+      { kind: "boolean", name: "showTools", label: "Show search, sorting and stock filters" },
+      { kind: "select", name: "cardStyle", label: "Product card style", options: ["minimal", "framed"] },
+      { kind: "select", name: "imageFit", label: "Product image fit", options: ["cover", "contain"] },
+      BACKGROUND_FIELD,
+    ],
+    defaults: { heading: "All products", description: "", columns: "4", showCategories: true, showCount: false, showTools: true, cardStyle: "minimal", imageFit: "cover" },
   },
   "featured-products": {
     type: "featured-products",
     label: "Featured products",
     fields: [
       { kind: "text", name: "heading", label: "Heading", maxLength: 60 },
+      { kind: "select", name: "layout", label: "Product layout", options: ["grid", "rail"] },
+      { kind: "select", name: "cardStyle", label: "Product card style", options: ["minimal", "framed"] },
+      { kind: "select", name: "imageFit", label: "Product image fit", options: ["cover", "contain"] },
+      { kind: "select", name: "headingStyle", label: "Heading style", options: ["normal", "uppercase"] },
       { kind: "select", name: "source", label: "Show", options: ["newest", "category"] },
       { kind: "text", name: "category", label: "Category (when showing a category)", maxLength: 60 },
       { kind: "number", name: "limit", label: "Number of products", min: 2, max: 24 },
       { kind: "select", name: "columns", label: "Columns", options: ["2", "3", "4"] },
       BACKGROUND_FIELD,
+      BUTTONS_FIELD,
     ],
-    defaults: { heading: "Featured", source: "newest", category: "", limit: 8, columns: "4" },
+    defaults: { heading: "Featured", source: "newest", category: "", limit: 8, columns: "4", buttons: [{ label: "Shop collection", link: "/products", style: "secondary" }] },
   },
   "category-grid": {
     type: "category-grid",
     label: "Category tiles",
     fields: [
       { kind: "text", name: "heading", label: "Heading", maxLength: 60 },
+      { kind: "select", name: "layout", label: "Tile style", options: ["grid", "editorial", "compact", "overlay", "circles"] },
       {
         kind: "list",
         name: "items",
@@ -108,6 +185,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
         fields: [
           { kind: "text", name: "label", label: "Label", maxLength: 40 },
           { kind: "text", name: "category", label: "Category", maxLength: 60 },
+          { kind: "url", name: "link", label: "Page" },
           { kind: "image", name: "image", label: "Image" },
         ],
       },
@@ -240,7 +318,7 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
 };
 
 export function isSectionType(value: unknown): value is SectionType {
-  return typeof value === "string" && value in SECTIONS;
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(SECTIONS, value);
 }
 
 export function createSection(type: SectionType, props: Record<string, unknown> = {}, id?: string): Section {
@@ -264,7 +342,7 @@ function validateField(field: FieldDefinition, value: unknown, path: string, err
     case "url":
     case "image":
       // Relative store paths or http(s) only; blocks javascript: and data: URLs.
-      if (typeof value !== "string" || !/^(\/(?!\/)|https?:\/\/)/i.test(value)) errors.push(`${path} must be a link starting with / or https://`);
+      if (typeof value !== "string" || !isSafeContentUrl(value)) errors.push(`${path} must be a link starting with / or https://`);
       return;
     case "color":
       if (typeof value !== "string" || !/^#[0-9a-f]{6}$/i.test(value)) errors.push(`${path} must be a hex color like #1a2b3c`);
@@ -284,7 +362,7 @@ function validateField(field: FieldDefinition, value: unknown, path: string, err
         errors.push(`${path} must be a list`);
         return;
       }
-      if (value.length > field.maxItems) errors.push(`${path} can have at most ${field.maxItems} items`);
+      if (value.length > field.maxItems) { errors.push(`${path} can have at most ${field.maxItems} items`); return; }
       value.forEach((item, i) => {
         if (typeof item !== "object" || item === null) {
           errors.push(`${path}[${i}] must be an object`);
@@ -294,6 +372,15 @@ function validateField(field: FieldDefinition, value: unknown, path: string, err
       });
       return;
   }
+}
+
+/** Strip unknown properties at every list level, including buttons and tiles. */
+function cleanField(field: FieldDefinition, value: unknown): unknown {
+  if (field.kind !== "list" || !Array.isArray(value)) return value;
+  return value.slice(0, field.maxItems).map(item => {
+    if (!item || typeof item !== "object") return item;
+    return Object.fromEntries(field.fields.filter(child => Object.prototype.hasOwnProperty.call(item, child.name)).map(child => [child.name, cleanField(child, item[child.name])]));
+  });
 }
 
 /**
@@ -326,7 +413,7 @@ export function validateSections(input: unknown): { ok: true; sections: Section[
       const value = (props as Record<string, unknown>)[field.name];
       // Messages name the section and field as the merchant sees them in the editor.
       validateField(field, value, `${def.label} (section ${i + 1}), ${field.label}`, errors);
-      if (value !== undefined) clean[field.name] = value;
+      if (value !== undefined) clean[field.name] = cleanField(field, value);
     }
     sections.push({ id: s.id, type: s.type, props: clean });
   });
@@ -355,6 +442,10 @@ export function productQueries(sections: Section[]): ProductQuery[] {
 }
 
 export function productQueryFor(section: Section): ProductQuery | null {
+  if (section.type === "product-catalog") {
+    const category = typeof section.props.category === "string" ? section.props.category.trim() : "";
+    return category ? { key: `catalog:category:${category}`, category, limit: 100 } : { key: "catalog:all", limit: 100 };
+  }
   if (section.type !== "featured-products") return null;
   const props = { ...SECTIONS["featured-products"].defaults, ...section.props };
   const limit = typeof props.limit === "number" ? props.limit : 8;

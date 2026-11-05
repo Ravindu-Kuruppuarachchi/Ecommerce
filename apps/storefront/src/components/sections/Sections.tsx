@@ -1,15 +1,19 @@
 import { schemeStyle, themeSettings } from "@/lib/theme";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { productQueryFor, SECTION_BACKGROUNDS, SECTIONS, storeHref, type Section, type SectionBackground } from "@repo/core";
+import { productQueryFor, SECTION_BACKGROUNDS, SECTIONS, storeHref, livePageLink, sectionButtons, type Section, type SectionBackground } from "@repo/core";
 import type { SectionContext } from "@/lib/types";
 import ProductCard from "../ProductCard";
 import NewsletterForm from "./NewsletterForm";
+import ProductCatalog from "./ProductCatalog";
+import CampaignSlider from "./CampaignSlider";
 
 // Every section renders on the server for customers and in the browser for the
 // editor preview, so nothing here may use hooks or server-only APIs.
 
 type Props = Record<string, unknown>;
+const pageHref = (ctx: SectionContext, link: string) => storeHref(ctx.store.slug, livePageLink(link, ctx.store.pages));
+const IMAGE_FOCUS: Record<string, string> = { top: "center top", center: "center", bottom: "center bottom" };
 
 /** The section's colour scheme, falling back to its type's default (testimonials default to "subtle"). */
 function sectionScheme(section: Section): SectionBackground {
@@ -33,7 +37,7 @@ function PreviewHint({ ctx, children }: { ctx: SectionContext; children: ReactNo
 function Heading({ children, align = "left" }: { children: ReactNode; align?: string }) {
   if (!children) return null;
   return (
-    <h2 className={`mb-8 font-heading text-2xl font-semibold tracking-tight md:text-3xl ${align === "center" ? "text-center" : ""}`}>
+    <h2 className={`mb-8 font-heading text-3xl font-medium tracking-[-0.035em] md:text-4xl ${align === "center" ? "text-center" : ""}`}>
       {children}
     </h2>
   );
@@ -47,7 +51,7 @@ function Announcement({ props, ctx }: { props: Props; ctx: SectionContext }) {
   return (
     <div className="bg-store-accent px-4 py-2.5 text-center text-store-on-accent">
       {link ? (
-        <Link href={storeHref(ctx.store.slug, link)} className="underline-offset-4 hover:underline">
+        <Link href={pageHref(ctx, link)} className="underline-offset-4 hover:underline">
           {content}
         </Link>
       ) : (
@@ -65,38 +69,65 @@ const HERO_HEIGHT: Record<string, string> = {
 
 function Hero({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const image = text(props.image);
+  const layout = text(props.layout, "overlay");
+  const composed = layout === "split" || layout === "editorial";
   const centered = props.align === "center";
-  const heading = text(props.heading);
-  const subheading = text(props.subheading);
-  const ctaLabel = text(props.ctaLabel);
   const height = HERO_HEIGHT[text(props.height, "medium")] ?? HERO_HEIGHT.medium;
-
   const copy = (
-    <div className={`relative flex max-w-2xl flex-col gap-5 ${centered ? "mx-auto items-center text-center" : ""}`}>
-      {heading && <h1 className="font-heading text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">{heading}</h1>}
-      {subheading && <p className="max-w-[48ch] text-base leading-relaxed opacity-85 md:text-lg">{subheading}</p>}
-      {ctaLabel && (
-        <Link href={storeHref(ctx.store.slug, text(props.ctaLink, "/products"))} className={`btn-primary mt-2 ${centered ? "" : "self-start"}`}>
-          {ctaLabel}
-        </Link>
-      )}
+    <div className={`hero-copy relative flex flex-col gap-6 ${centered ? "items-center text-center" : "items-start"}`}>
+      {text(props.eyebrow) && <p className="text-xs font-semibold uppercase tracking-[0.18em]">{text(props.eyebrow)}</p>}
+      {text(props.heading) && <h1 className="hero-title max-w-[14ch] text-balance font-heading font-medium tracking-[-0.045em]">{text(props.heading)}</h1>}
+      {text(props.subheading) && <p className="max-w-[42ch] text-base leading-relaxed opacity-85 md:text-lg">{text(props.subheading)}</p>}
+      <div className="flex flex-wrap gap-3">
+        {sectionButtons(props).filter(button => button.label && button.link).map((button, index) => <Link key={index} href={pageHref(ctx, button.link)} className={`${button.style === "secondary" ? "btn-secondary" : "btn-primary"} mt-2`}>{button.label}{button.style !== "secondary" && <span aria-hidden="true">↗</span>}</Link>)}
+      </div>
     </div>
   );
 
-  if (!image) {
+  if (["spotlight", "mosaic", "panorama", "utility"].includes(layout)) {
+    const secondary = props.showSecondaryImage === true && ["spotlight", "mosaic"].includes(layout) ? text(props.secondaryImage) : "";
+    return <section className={`designed-hero designed-${layout} designed-height-${text(props.height, "medium")} ${secondary ? "designed-with-detail" : "designed-single-image"} ${image ? "" : "designed-no-image"}`}>
+      <div className="designed-hero-inner">
+        {copy}
+        {image && <div className="designed-visual">
+          <img src={image} alt={text(props.imageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="designed-main-image" />
+        </div>}
+        {secondary && <Link href={pageHref(ctx, text(props.secondaryCtaLink, "/products"))} className="designed-detail group">
+          <img src={secondary} alt={text(props.secondaryImageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+          {text(props.secondaryCtaLabel) && <span className="designed-detail-label">{text(props.secondaryCtaLabel)} <span aria-hidden="true">↗</span></span>}
+        </Link>}
+      </div>
+    </section>;
+  }
+
+  if (layout === "duo") {
+    return <section className={`hero-duo hero-photo relative isolate flex items-end overflow-hidden text-[#fafafa] ${height}`}>
+      <div className="absolute inset-0 -z-20 grid grid-cols-2 gap-0.5 bg-store-surface">
+        {[image, text(props.secondaryImage) || image].map((src, i) => src ? <img key={i} src={src} alt={text(i === 0 ? props.imageAlt : props.secondaryImageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="h-full min-h-0 w-full object-cover" /> : <div key={i} />)}
+      </div>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 md:py-20">{copy}</div>
+    </section>;
+  }
+
+  if (composed) {
     return (
-      <section className={`flex items-center bg-store-surface ${height}`}>
-        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">{copy}</div>
+      <section className={`hero-composed hero-${layout} ${height}`}>
+        <div className={`hero-composed-inner mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 sm:px-8 ${image ? "md:grid-cols-2" : "hero-no-image"} md:gap-14 md:py-16`}>
+          {copy}
+          {image && <div className="hero-image overflow-hidden rounded-media bg-store-surface"><img src={image} alt={text(props.imageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="h-full w-full object-cover" /></div>}
+        </div>
       </section>
     );
   }
 
   return (
-    <section className={`relative isolate flex items-end overflow-hidden text-[#fafafa] ${height}`}>
-      <img src={image} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
-      {/* Scrim keeps light text readable on any photo. */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-black/35 to-black/10" />
-      <div className={`mx-auto w-full max-w-7xl px-4 py-14 sm:px-8 md:py-20 ${centered ? "self-center" : ""}`}>{copy}</div>
+    <section className={`hero-${layout === "poster" ? "poster" : "overlay"} relative isolate flex overflow-hidden ${image ? "hero-photo items-end text-[#fafafa]" : "items-center bg-store-surface"} ${height}`}>
+      {image && <>
+        <img src={image} alt={text(props.imageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/70 via-black/45 to-black/10" />
+      </>}
+      <div className={`mx-auto w-full max-w-7xl px-4 py-14 sm:px-8 md:py-20 ${centered ? "flex justify-center self-center" : ""}`}>{copy}</div>
     </section>
   );
 }
@@ -122,16 +153,14 @@ function FeaturedProducts({ section, ctx }: { section: Section; ctx: SectionCont
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-8">
-      <div className="flex items-baseline justify-between gap-4">
+    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
+      <div className={`flex flex-wrap items-baseline justify-between gap-4 ${props.headingStyle === "uppercase" ? "retail-heading" : ""}`}>
         <Heading>{heading}</Heading>
-        <Link href={`/${ctx.store.slug}/products`} className="mb-8 shrink-0 text-sm text-store-muted underline-offset-4 hover:text-store-fg hover:underline">
-          View all
-        </Link>
+        <div className="mb-8 flex max-w-full flex-wrap gap-3">{sectionButtons({ ...SECTIONS["featured-products"].defaults, ...props }).filter(button => button.label && button.link).map((button, index) => <Link key={index} href={pageHref(ctx, button.link)} className={button.style === "secondary" ? "btn-secondary" : "btn-primary"}>{button.label}</Link>)}</div>
       </div>
-      <div className={`grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 ${COLUMNS[text(props.columns, "4")] ?? COLUMNS["4"]}`}>
+      <div tabIndex={props.layout === "rail" ? 0 : undefined} role={props.layout === "rail" ? "region" : undefined} aria-label={props.layout === "rail" ? heading || "Product collection" : undefined} className={props.layout === "rail" ? "product-rail" : `grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 ${COLUMNS[text(props.columns, "4")] ?? COLUMNS["4"]}`}>
         {products.map((p) => (
-          <ProductCard key={p.id} product={p} storeSlug={ctx.store.slug} currency={ctx.store.currency} quickAdd={themeSettings(ctx.store.theme).quickAdd} />
+          <ProductCard key={p.id} product={p} storeSlug={ctx.store.slug} currency={ctx.store.currency} quickAdd={themeSettings(ctx.store.theme).quickAdd} cardStyle={text(props.cardStyle)} imageFit={text(props.imageFit)} />
         ))}
       </div>
     </section>
@@ -142,23 +171,28 @@ function CategoryGrid({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const items = list(props.items).filter((i) => text(i.label) || text(i.category));
   if (!items.length) return <PreviewHint ctx={ctx}>Add tiles to link customers to your categories.</PreviewHint>;
   // One column per tile up to four, so the grid never has empty cells.
-  const cols = ["", "md:grid-cols-1", "md:grid-cols-2", "md:grid-cols-3", "md:grid-cols-4"][Math.min(items.length, 4)];
+  const overlay = props.layout === "overlay";
+  const circles = props.layout === "circles";
+  const compact = props.layout === "compact";
+  const editorial = props.layout === "editorial" && items.length > 1;
+  const cols = editorial && items.length === 2 ? "md:grid-cols-[1.3fr_1fr]" : ["", "md:grid-cols-1", "md:grid-cols-2", "md:grid-cols-3", "md:grid-cols-4"][Math.min(items.length, 4)];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-8">
+    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
       <Heading>{text(props.heading)}</Heading>
       <div className={`grid grid-cols-2 gap-4 md:gap-6 ${cols}`}>
         {items.map((item, i) => {
           const category = text(item.category) || text(item.label);
           const image = text(item.image);
-          return (
-            <Link key={i} href={`/${ctx.store.slug}/products?category=${encodeURIComponent(category)}`} className="group block">
-              <div className="aspect-[4/5] overflow-hidden rounded-media bg-store-surface">
+          const link = typeof item.link === "string" ? item.link : `/products?category=${encodeURIComponent(category)}`;
+          const className = `collection-tile collection-${text(props.layout, "grid")} group relative block ${editorial && i % 2 === 1 ? "md:pt-16" : ""} ${circles ? "text-center" : ""}`;
+          const content = <>
+              <div className={`${circles ? "aspect-square !rounded-full" : compact ? "aspect-[4/3]" : "aspect-[4/5]"} overflow-hidden rounded-media bg-store-surface`}>
                 {image && <img src={image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />}
               </div>
-              <p className="mt-3 font-medium">{text(item.label) || category}</p>
-            </Link>
-          );
+              {overlay ? <div className="absolute inset-0 flex items-end rounded-media bg-gradient-to-t from-black/75 via-transparent to-transparent p-5 text-white"><p className="font-heading text-xl font-semibold uppercase tracking-wide md:text-3xl">{text(item.label) || category}<span aria-hidden="true" className="ml-3">↗</span></p></div> : <p className={`mt-4 flex items-center gap-2 font-heading text-base font-medium ${circles ? "justify-center" : "justify-between"}`}>{text(item.label) || category}{!circles && <span aria-hidden="true" className="text-store-muted transition-transform group-hover:translate-x-1">↗</span>}</p>}
+          </>;
+          return link ? <Link key={i} href={pageHref(ctx, link)} className={className}>{content}</Link> : <div key={i} className={className}>{content}</div>;
         })}
       </div>
     </section>
@@ -241,10 +275,10 @@ function Testimonials({ props, ctx }: { props: Props; ctx: SectionContext }) {
 
 function Newsletter({ props, ctx }: { props: Props; ctx: SectionContext }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-8">
+    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
       <div className="grid gap-6 rounded-media border border-store-line p-8 md:grid-cols-2 md:items-center md:p-12">
         <div>
-          <h2 className="font-heading text-2xl font-semibold tracking-tight">{text(props.heading, SECTIONS.newsletter.defaults.heading as string)}</h2>
+          <h2 className="font-heading text-3xl font-medium tracking-tight md:text-4xl">{text(props.heading, SECTIONS.newsletter.defaults.heading as string)}</h2>
           {text(props.body) && <p className="mt-2 text-store-muted">{text(props.body)}</p>}
         </div>
         <NewsletterForm storeSlug={ctx.store.slug} disabled={ctx.preview} />
@@ -316,7 +350,7 @@ function PromoTiles({ props, ctx }: { props: Props; ctx: SectionContext }) {
             </div>
           );
           return text(item.link) ? (
-            <Link key={i} href={storeHref(ctx.store.slug, text(item.link))} className="group block">{inner}</Link>
+            <Link key={i} href={pageHref(ctx, text(item.link))} className="group block">{inner}</Link>
           ) : (
             <div key={i}>{inner}</div>
           );
@@ -326,13 +360,33 @@ function PromoTiles({ props, ctx }: { props: Props; ctx: SectionContext }) {
   );
 }
 
+function LinkStrip({ props, ctx }: { props: Props; ctx: SectionContext }) {
+  const items = list(props.items).filter((item) => text(item.label));
+  if (!items.length) return <PreviewHint ctx={ctx}>Add collection shortcuts.</PreviewHint>;
+  return <nav aria-label={text(props.heading, "Collection shortcuts")} className="border-y border-store-line px-4 py-5 sm:px-8">
+    <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-4">
+      {text(props.heading) && <p className="text-xs font-semibold uppercase tracking-widest text-store-muted">{text(props.heading)}</p>}
+      {items.map((item, i) => <Link key={i} href={pageHref(ctx, text(item.link))} className="border-b border-transparent py-1 text-sm font-semibold uppercase tracking-wide hover:border-store-fg">{text(item.label)}</Link>)}
+    </div>
+  </nav>;
+}
+
 function SectionView({ section, ctx }: { section: Section; ctx: SectionContext }) {
   const props = section.props;
   switch (section.type) {
+    case "campaign-slider": {
+      const slides = list(props.slides).filter((item) => text(item.heading) || text(item.image)).map((item) => ({
+        heading: text(item.heading), eyebrow: text(item.eyebrow), body: text(item.body), image: text(item.image), imageAlt: text(item.imageAlt), imageFocus: text(item.imageFocus), ctaLabel: text(item.ctaLabel), ctaLink: livePageLink(text(item.ctaLink, "/products"), ctx.store.pages), buttons: sectionButtons(item).map(button => ({ ...button, link: livePageLink(button.link, ctx.store.pages) })),
+      }));
+      return slides.length ? <CampaignSlider slides={slides} storeSlug={ctx.store.slug} label={text(props.label, "Latest collections")} full={props.height === "full"} layout={text(props.layout, "split")} /> : <PreviewHint ctx={ctx}>Add your first campaign.</PreviewHint>;
+    }
+    case "link-strip": return <LinkStrip props={props} ctx={ctx} />;
     case "announcement":
       return <Announcement props={props} ctx={ctx} />;
     case "hero":
       return <Hero props={props} ctx={ctx} />;
+    case "product-catalog":
+      return <ProductCatalog products={ctx.products[productQueryFor(section)!.key] ?? []} storeSlug={ctx.store.slug} currency={ctx.store.currency} quickAdd={themeSettings(ctx.store.theme).quickAdd} props={props} preview={ctx.preview} category={ctx.category} />;
     case "featured-products":
       return <FeaturedProducts section={section} ctx={ctx} />;
     case "category-grid":

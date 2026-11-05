@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { productQueries, validateSections, type Section } from "@repo/core";
+import { PRODUCTS_PAGE_SLUG, productQueries, validateSections, type Section } from "@repo/core";
 import { loadSectionProducts } from "@/lib/api";
 import type { Product, PublicStore } from "@/lib/types";
 import Sections from "./sections/Sections";
 
 // The dashboard origins allowed to drive the preview.
-const DASHBOARD_ORIGINS = (process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000")
+const DASHBOARD_ORIGINS = (process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3002")
   .split(",")
   .map((o) => o.trim().replace(/\/$/, ""));
 
@@ -52,14 +52,23 @@ export default function PreviewCanvas({ store }: { store: PublicStore }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey, store.slug]);
 
-  // The preview is for looking, not navigating: block links anywhere on the page, header included.
+  // Header/footer page links ask the editor to switch pages; section links remain selectable.
   useEffect(() => {
     const block = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest("a")) e.preventDefault();
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
+      if (!anchor) return;
+      e.preventDefault();
+      if (target.closest("[data-section-id]") || !parentOrigin.current) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      const root = `/${store.slug}`;
+      const slug = url.pathname === `${root}/products` ? PRODUCTS_PAGE_SLUG : url.pathname === root || url.pathname === `${root}/` ? "home" : url.pathname.startsWith(`${root}/pages/`) ? url.pathname.slice(`${root}/pages/`.length) : null;
+      if (slug) window.parent.postMessage({ type: "builder:navigate", slug }, parentOrigin.current);
     };
     document.addEventListener("click", block, true);
     return () => document.removeEventListener("click", block, true);
-  }, []);
+  }, [store.slug]);
 
   const onClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;

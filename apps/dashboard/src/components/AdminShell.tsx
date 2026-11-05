@@ -55,6 +55,17 @@ export const MODULES_CHANGED_EVENT = "modules-changed";
 // Full-screen routes (the page editor) get the whole viewport, no sidebar.
 const isFullScreen = (path: string) => path.startsWith("/store/pages/");
 
+/** Merchants' own identity leads; the platform is a quiet supporting credit. */
+function MerchantIdentity({ name, slug, compact = false }: { name: string; slug?: string; compact?: boolean }) {
+  return <div className="min-w-0">
+    <a href={slug ? storefrontUrl(slug) : "/dashboard"} target={slug ? "_blank" : undefined} rel={slug ? "noreferrer" : undefined} title={name} className={`flex min-w-0 items-center gap-2 font-semibold tracking-tight text-gray-950 hover:text-brand-700 ${compact ? "text-base" : "text-lg leading-snug"}`}>
+      <span className={compact ? "truncate" : "min-w-0 break-words"}>{name}</span>
+      {slug && <ArrowSquareOut size={13} className="shrink-0 text-gray-400" />}
+    </a>
+    <Link href="/" className="mt-1 inline-block text-[11px] font-normal text-gray-500 hover:text-gray-700">Shophub by Voxel Labs</Link>
+  </div>;
+}
+
 function NavLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: ComponentType<IconProps>; active: boolean }) {
   return (
     <Link href={href} aria-current={active ? "page" : undefined} className={`sidebar-link ${active ? "active" : "text-gray-600"}`}>
@@ -104,19 +115,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const sidebar = (
     <nav aria-label="Main" className="flex h-full flex-col">
-      <div className="border-b border-gray-100 px-5 py-5">
-        <p className="text-lg font-bold tracking-tight text-gray-900">ShopHub</p>
-        {store && (
-          <a
-            href={storefrontUrl(store.slug)}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-flex max-w-full items-center gap-1 truncate text-xs text-gray-500 hover:text-brand-700"
-          >
-            {store.name}
-            <ArrowSquareOut size={12} />
-          </a>
-        )}
+      <div className="border-b border-gray-100 py-5 pl-5 pr-12">
+        <MerchantIdentity name={store?.name || "Your store"} slug={store?.slug} />
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         <NavLink href="/dashboard" label="Home" icon={House} active={isActive("/dashboard")} />
@@ -148,9 +148,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="min-h-[100dvh] bg-gray-50">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-gray-200 bg-white lg:block">{sidebar}</aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
-        <span className="font-bold tracking-tight">ShopHub</span>
-        <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu" className="rounded-lg p-2 hover:bg-gray-100">
+      <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+        <MerchantIdentity name={store?.name || "Your store"} slug={store?.slug} compact />
+        <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu" className="shrink-0 rounded-lg p-2 hover:bg-gray-100">
           <List size={22} />
         </button>
       </header>

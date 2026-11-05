@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./voxel.css";
 
 export const metadata: Metadata = {
-  title: "ShopHub — Merchant Dashboard",
+  title: "Shophub by Voxel Labs",
   description:
-    "Manage your online store, products, orders, and analytics from the ShopHub merchant dashboard.",
+    "Manage your online store, products, orders, and analytics from the Shophub merchant dashboard.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
         {children}
       </body>

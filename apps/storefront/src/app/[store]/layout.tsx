@@ -5,9 +5,10 @@ import StoreShell from "@/components/StoreShell";
 import { getStore } from "@/lib/api";
 import { themeSettings, themeStyle } from "@/lib/theme";
 
-type Params = { params: { store: string } };
+type Params = { params: Promise<{ store: string }> };
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params: pendingParams }: Params): Promise<Metadata> {
+  const params = await pendingParams;
   const store = await getStore(params.store);
   if (!store) return {};
   return {
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function StoreLayout({ params, children }: Params & { children: React.ReactNode }) {
+export default async function StoreLayout({ params: pendingParams, children }: Params & { children: React.ReactNode }) {
+  const params = await pendingParams;
   const store = await getStore(params.store);
   if (!store) notFound();
 

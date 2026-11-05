@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { isTemplateKey, TEMPLATE_KEYS, type TemplateKey } from "@repo/core";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -12,10 +12,24 @@ export const authRouter = Router();
 
 // Slows password guessing; generous enough for people mistyping.
 const authLimit = rateLimit({ windowMs: 15 * 60_000, max: 20 });
+const passwordLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 });
+
+const newPasswordSchema = z.string().min(8, "Password must be at least 8 characters").max(72)
+  .refine(value => Buffer.byteLength(value, "utf8") <= 72, "Password must be at most 72 bytes");
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password").max(200),
+  newPassword: newPasswordSchema,
+  confirmPassword: z.string().min(1, "Confirm your new password").max(72),
+}).refine((value) => value.newPassword === value.confirmPassword, {
+  message: "New passwords do not match", path: ["confirmPassword"],
+}).refine((value) => value.currentPassword !== value.newPassword, {
+  message: "Choose a password different from your current password", path: ["newPassword"],
+});
 
 const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+  password: newPasswordSchema,
   firstName: z.string().trim().max(60).optional(),
   lastName: z.string().trim().max(60).optional(),
   storeName: z.string().trim().min(2).max(80),
@@ -79,6 +93,27 @@ authRouter.post(
     if (!user || !ok) throw new HttpError(401, "Invalid email or password");
 
     res.json({ user: publicUser(user), store: user.stores[0] ?? null, token: signToken(user) });
+  }),
+);
+
+authRouter.post(
+  "/password",
+  requireAuth,
+  passwordLimit,
+  asyncHandler(async (req, res) => {
+    const body = parseBody(changePasswordSchema, req.body);
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) throw new HttpError(404, "User not found");
+    if (!await bcrypt.compare(body.currentPassword, user.password)) {
+      throw new HttpError(400, "Current password is incorrect");
+    }
+    const password = await bcrypt.hash(body.newPassword, 12);
+    // Only replace the hash that was verified, including concurrent password changes.
+    const updated = await prisma.user.updateMany({
+      where: { id: user.id, password: user.password }, data: { password },
+    });
+    if (!updated.count) throw new HttpError(409, "Your password changed during this request. Please try again.");
+    res.json({ message: "Password updated successfully", token: signToken({ ...user, password }) });
   }),
 );
 

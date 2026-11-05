@@ -1,5 +1,20 @@
-import { redirect } from "next/navigation";
-
-export default function Root() {
-  redirect("/dashboard");
-}
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight, Check } from "@phosphor-icons/react/dist/ssr";
+import { Site, CTA, Photo, DesignCard, LaunchSteps, FAQ, TextLink } from "@/components/marketing/Site";
+import { Toolkit } from "@/components/marketing/Toolkit";
+import { STOREFRONT_URL } from "@/lib/urls";
+export const metadata: Metadata = { title: "Shophub by Voxel Labs | Your idea. Your brand. Your store.", description: "Turn your next big idea into an online store. Explore 20 distinctive designs, make every page yours, and run your business with Shophub by Voxel Labs." };
+export default function Home() { return <Site>
+  <section className="voxel-hero voxel-wrap">
+    <div className="voxel-hero-copy"><p className="voxel-eyebrow"><span className="vl-live-dot"/> For the independently ambitious</p><h1>Your idea.<br/>Your brand.<br/><span className="vl-orange">Your next big thing.</span></h1><p className="voxel-hero-description">More than a place to sell. A place to be <strong>you.</strong> Build a beautiful online store and bring your business’s next chapter to life.</p><div className="voxel-hero-actions"><Link href="/register" className="voxel-button">Build your store <ArrowUpRight size={18}/></Link><TextLink href="/designs">Find your look</TextLink></div><p className="vl-hero-note"><Check size={15}/> No monthly platform fee <span>·</span> 20 editable designs</p></div>
+    <div className="vl-hero-art"><div className="vl-art-label"><span>YOUR BRAND, IN GOOD COMPANY</span><span>↗</span></div><div className="voxel-preview-frame"><div className="voxel-preview-bar"><span><span className="vl-browser-dots">● ● ●</span> habitat.store</span><a href={`${STOREFRONT_URL}/template-preview/habitat`} target="_blank" rel="noreferrer" aria-label="Explore Habitat preview"><ArrowUpRight size={18}/></a></div><Image src="/brand/previews/habitat.png" alt="Habitat template featuring a sunlit living room and furniture collections" width={1000} height={1000} priority sizes="(max-width: 767px) 90vw, 48vw"/></div><div className="vl-mini-product"><Photo name="beauty" alt="Beauty products with warm natural styling"/><div><span>Made to stand out.</span><strong>Just like you.</strong><span className="vl-swatch-row"><i/><i/><i/></span></div></div><div className="vl-art-tag"><span>✳</span> A small business.<br/>A whole world of possibility.</div></div>
+  </section>
+  <section className="voxel-section voxel-wrap"><div className="vl-section-top"><div className="voxel-section-heading"><h2>Looks like your brand.<br/>Feels like no one else.</h2></div><div><TextLink href="/designs">Explore all 20 designs</TextLink></div></div><div className="voxel-design-grid"><DesignCard name="runway"/><DesignCard name="habitat"/><DesignCard name="reef"/></div></section>
+  <section className="vl-editorial"><div className="voxel-wrap vl-editorial-grid"><div className="vl-editorial-photo"><Photo name="streetwear" alt="Fashion styling with a tailored jacket and neutral layers"/><span>For the brands with something to say.</span></div><div className="vl-editorial-copy"><p className="voxel-eyebrow">Your story deserves its own space</p><h2>Don’t just sell a product.<br/><em>Build a world around it.</em></h2><p>The details make the difference. A collection that feels considered. Photography that sets the mood. A story that gives people a reason to choose you.</p><p>Bring it all together with pages, colours and layouts that feel unmistakably yours.</p><TextLink href="/store-builder">See what you can create</TextLink><div className="vl-materials"><Photo name="coffee" alt="Roasted coffee beans"/><Photo name="botanical" alt="Leafy green plants"/><Photo name="interior" alt="Warm contemporary living room"/><span>Whatever you’re<br/>passionate about.</span></div></div></div></section>
+  <Toolkit/>
+  <LaunchSteps/>
+  <section className="voxel-wrap vl-pricing-teaser"><div><p className="voxel-eyebrow">Room to start. Space to grow.</p><h2>A big idea shouldn’t need<br/>a monthly commitment.</h2><p>No monthly platform fee. A standard 10% fee on goods after discounts.<br/>A simple starting point for your next chapter.</p><TextLink href="/pricing">Let’s talk numbers</TextLink></div><div className="vl-price-stamp"><span>MONTHLY PLATFORM FEE</span><strong>Rs. 0</strong><span>More room for what matters.</span></div></section>
+  <FAQ/><CTA/>
+</Site>; }

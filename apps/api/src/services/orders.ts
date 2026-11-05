@@ -1,4 +1,4 @@
-import { Prisma, type Order } from "@prisma/client";
+import { Prisma, type Order, type Customer } from "@prisma/client";
 import { computeOrderTotals } from "@repo/core";
 import { HttpError } from "../lib/http";
 import { changeStock } from "./inventory";
@@ -9,7 +9,6 @@ export const PAYMENT_METHODS = ["cod"] as const; // "card" arrives with the PayH
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export interface CheckoutInput {
-  email: string;
   paymentMethod: PaymentMethod;
   items: Array<{ productId: string; variantId?: string; quantity: number }>;
   discountCode?: string;
@@ -40,7 +39,7 @@ const lineKey = (productId: string, variantId?: string | null) => `${productId}:
  * stock is reserved in the same transaction so two customers can't buy the
  * last unit.
  */
-export async function placeOrder(storeSlug: string, input: CheckoutInput) {
+export async function placeOrder(storeSlug: string, input: CheckoutInput, identity: Pick<Customer, "id" | "storeId" | "email">) {
   // Merge repeated lines for the same product and variant.
   const quantities = new Map<string, { productId: string; variantId?: string; quantity: number }>();
   for (const item of input.items) {
@@ -53,6 +52,7 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
   return prisma.$transaction(async (tx) => {
     const store = await tx.store.findUnique({ where: { slug: storeSlug } });
     if (!store || store.status === "suspended") throw new HttpError(404, "Store not found");
+    if (identity.storeId !== store.id) throw new HttpError(403, "Sign in to this store before making a purchase");
     if (store.status !== "live") throw new HttpError(409, "This store isn't taking orders yet");
 
     const products = await tx.product.findMany({
@@ -111,11 +111,13 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
       platformFeeBps: store.platformFeeBps,
     });
 
-    const email = input.email.toLowerCase();
-    const customer = await tx.customer.upsert({
-      where: { storeId_email: { storeId: store.id, email } },
-      create: { storeId: store.id, email, phone: input.shippingAddress.phone },
-      update: { phone: input.shippingAddress.phone },
+    if (Object.values(totals).some(value => !Number.isSafeInteger(value) || value < 0 || value > 2_147_483_647)) {
+      throw new HttpError(400, "This order exceeds the supported amount. Please reduce the quantity.");
+    }
+    const email = identity.email;
+    const customer = await tx.customer.update({
+      where: { id: identity.id, storeId: store.id },
+      data: { phone: input.shippingAddress.phone, savedAddress: input.shippingAddress },
     });
 
     const { orderCounter } = await tx.store.update({
@@ -172,6 +174,7 @@ export async function placeOrder(storeSlug: string, input: CheckoutInput) {
  * Ledger keys make this safe to call twice.
  */
 export async function recordOrderPaid(tx: Prisma.TransactionClient, order: Order): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM "Store" WHERE id = ${order.storeId} FOR UPDATE`;
   const base = { storeId: order.storeId, orderId: order.id, currency: order.currency };
   const entries: Prisma.LedgerEntryCreateManyInput[] = [];
   if (order.paymentMethod !== "cod") {
@@ -193,6 +196,8 @@ export async function recordOrderPaid(tx: Prisma.TransactionClient, order: Order
 /** Merchant confirms cash was collected for a COD order. */
 export async function markCodOrderPaid(storeId: string, orderId: string) {
   return prisma.$transaction(async (tx) => {
+    // Serialize payment and status changes on this order before reading its state.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} AND "storeId" = ${storeId} FOR UPDATE`;
     const order = await tx.order.findFirst({ where: { id: orderId, storeId } });
     if (!order) throw new HttpError(404, "Order not found");
     if (order.paymentMethod !== "cod") throw new HttpError(400, "Only cash-on-delivery orders can be marked paid by hand");
@@ -218,6 +223,8 @@ export async function updateOrderStatus(
   change: { status?: string; fulfillmentStatus?: (typeof FULFILLMENT_STATUSES)[number]; courier?: string | null; trackingNumber?: string | null },
 ) {
   return prisma.$transaction(async (tx) => {
+    // Serialize payment and status changes on this order before reading its state.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} AND "storeId" = ${storeId} FOR UPDATE`;
     const order = await tx.order.findFirst({ where: { id: orderId, storeId }, include: { items: true } });
     if (!order) throw new HttpError(404, "Order not found");
 
@@ -232,7 +239,7 @@ export async function updateOrderStatus(
           if (!item.productId) continue;
           const variantGone = item.variantTitle !== null && item.variantId === null;
           if (variantGone) continue;
-          await changeStock(tx, { storeId, productId: item.productId, variantId: item.variantId, change: item.quantity, reason: "cancellation", note: `Order #${order.orderNumber}` }).catch(() => undefined);
+          await changeStock(tx, { storeId, productId: item.productId, variantId: item.variantId, change: item.quantity, reason: "cancellation", note: `Order #${order.orderNumber}` });
         }
         if (order.discountId) {
           await tx.discount.updateMany({ where: { id: order.discountId, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });

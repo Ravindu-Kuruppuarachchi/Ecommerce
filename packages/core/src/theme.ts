@@ -1,3 +1,4 @@
+import { isSafeContentUrl } from "./urls";
 // Storefront theme helpers shared by the dashboard (editing) and the
 // storefront (rendering).
 
@@ -17,7 +18,7 @@ export function isFontName(value: unknown): value is FontName {
   return FONT_OPTIONS.some((f) => f.name === value);
 }
 
-export const HEADER_STYLES = ["minimal", "standard", "premium"] as const;
+export const HEADER_STYLES = ["minimal", "standard", "premium", "contrast", "department"] as const;
 export type HeaderStyle = (typeof HEADER_STYLES)[number];
 
 function channel(hex: string, start: number): number {
@@ -47,7 +48,7 @@ export function readableTextOn(background: string): string {
  * ("/products") get the store prefix; absolute http(s) links pass through.
  */
 export function storeHref(storeSlug: string, link: string | undefined | null): string {
-  if (!link) return `/${storeSlug}`;
+  if (!link || !isSafeContentUrl(link)) return `/${storeSlug}`;
   if (/^https?:\/\//i.test(link)) return link;
   if (!link.startsWith("/")) return `/${storeSlug}`;
   return link === "/" ? `/${storeSlug}` : `/${storeSlug}${link}`;
@@ -59,7 +60,11 @@ export const CORNER_STYLES = ["sharp", "soft", "round"] as const;
 export const BUTTON_STYLES = ["solid", "outline"] as const;
 export const IMAGE_RATIOS = ["portrait", "square", "landscape"] as const;
 
+export interface NavigationLink { label: string; link: string }
+
 export interface ThemeSettings {
+  /** Optional curated department links. Older themes keep their page-based navigation. */
+  navigation?: NavigationLink[];
   corners: (typeof CORNER_STYLES)[number];
   buttons: (typeof BUTTON_STYLES)[number];
   /** Shape of product images in grids and on product pages. */
@@ -76,7 +81,14 @@ const pick = <T extends string>(options: readonly T[], value: unknown, fallback:
 /** Fills in defaults and drops anything unknown, so old or hand-edited settings always render. */
 export function normalizeThemeSettings(raw: unknown): ThemeSettings {
   const s = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const navigation = Array.isArray(s.navigation) ? s.navigation.slice(0, 8).flatMap((raw) => {
+    if (!raw || typeof raw !== "object") return [];
+    const item = raw as Record<string, unknown>;
+    if (typeof item.label !== "string" || !item.label.trim() || typeof item.link !== "string" || !/^(\/(?!\/)|https?:\/\/)/i.test(item.link)) return [];
+    return [{ label: item.label.trim().slice(0, 40), link: item.link.slice(0, 500) }];
+  }) : [];
   return {
+    ...(navigation.length ? { navigation } : {}),
     corners: pick(CORNER_STYLES, s.corners, DEFAULT_THEME_SETTINGS.corners),
     buttons: pick(BUTTON_STYLES, s.buttons, DEFAULT_THEME_SETTINGS.buttons),
     imageRatio: pick(IMAGE_RATIOS, s.imageRatio, DEFAULT_THEME_SETTINGS.imageRatio),

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowSquareOut, ArrowUp, CaretLeft, CopySimple, Desktop, DeviceMobile, Plus, Trash } from "@phosphor-icons/react";
-import { createSection, SECTIONS, type Section, type SectionType } from "@repo/core";
+import { pagePath, createSection, SECTIONS, type Section, type SectionType } from "@repo/core";
+import StorePagesPanel from "@/components/editor/StorePagesPanel";
+import { PageLinksContext, type EditorPage } from "@/components/editor/PageLinks";
 import FieldEditor, { IconButton } from "@/components/editor/FieldEditor";
 import { errorMessage, pageApi } from "@/lib/api-client";
 import { STOREFRONT_URL, storefrontUrl } from "@/lib/urls";
@@ -24,8 +26,23 @@ function summary(section: Section): string {
 
 export default function PageEditor() {
   const { slug } = useParams<{ slug: string }>();
+  return <Editor key={slug} slug={slug} />;
+}
+
+function Editor({ slug }: { slug: string }) {
+  const router = useRouter();
+  const [pages, setPages] = useState<EditorPage[]>([]);
+  const [panel, setPanel] = useState<"sections" | "pages">("sections");
+  const switching = useRef(false);
+  const editRevision = useRef(0);
+  const saveInFlight = useRef(false);
+  const refreshPages = useCallback(async () => { setPages((await pageApi.list()).data); }, []);
   const store = useAuthStore((s) => s.store);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const previewReady = useRef(false);
+  const readyPreviewWindow = useRef<Window | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(true);
+  const [previewVersion, setPreviewVersion] = useState(0);
 
   const [title, setTitle] = useState("");
   const [sections, setSections] = useState<Section[] | null>(null);
@@ -40,20 +57,20 @@ export default function PageEditor() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    pageApi
-      .get(slug)
-      .then((res) => {
+    pageApi.prepare()
+      .then(() => Promise.all([pageApi.get(slug), refreshPages()]))
+      .then(([res]) => {
         setTitle(res.data.title);
         setSections(res.data.draftSections);
         setPublishedAt(res.data.publishedAt);
         setHasUnpublished(JSON.stringify(res.data.draftSections) !== JSON.stringify(res.data.publishedSections));
       })
       .catch((err) => setLoadError(errorMessage(err, "Couldn't load this page")));
-  }, [slug]);
+  }, [slug, refreshPages]);
 
   // ---- Preview messaging ----
   const sendToPreview = useCallback(() => {
-    if (!sections) return;
+    if (!sections || !previewReady.current || readyPreviewWindow.current !== iframeRef.current?.contentWindow) return;
     iframeRef.current?.contentWindow?.postMessage({ type: "builder:render", sections, selectedId }, STOREFRONT_ORIGIN);
   }, [sections, selectedId]);
 
@@ -62,18 +79,25 @@ export default function PageEditor() {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== STOREFRONT_ORIGIN || e.source !== iframeRef.current?.contentWindow) return;
-      if (e.data?.type === "builder:ready") sendToPreview();
+      if (e.data?.type === "builder:ready") {
+        previewReady.current = true;
+        readyPreviewWindow.current = iframeRef.current?.contentWindow ?? null;
+        setPreviewLoading(false);
+        sendToPreview();
+      }
       if (e.data?.type === "builder:select" && typeof e.data.id === "string") setSelectedId(e.data.id);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [sendToPreview]);
 
-  const scrollPreviewTo = (id: string) =>
-    iframeRef.current?.contentWindow?.postMessage({ type: "builder:scroll-to", id }, STOREFRONT_ORIGIN);
+  const scrollPreviewTo = (id: string) => {
+    if (previewReady.current && readyPreviewWindow.current === iframeRef.current?.contentWindow) iframeRef.current?.contentWindow?.postMessage({ type: "builder:scroll-to", id }, STOREFRONT_ORIGIN);
+  };
 
   // ---- Editing ----
   const update = (next: Section[]) => {
+    editRevision.current++;
     setSections(next);
     setSaveState("dirty");
     setErrors([]);
@@ -81,6 +105,7 @@ export default function PageEditor() {
   };
 
   const select = (id: string) => {
+    setPanel("sections");
     setSelectedId(id);
     setAdding(false);
     scrollPreviewTo(id);
@@ -116,21 +141,25 @@ export default function PageEditor() {
 
   // ---- Saving ----
   const save = useCallback(async (): Promise<boolean> => {
-    if (!sections) return false;
+    if (!sections || saveInFlight.current) return false;
+    saveInFlight.current = true;
+    const revision = editRevision.current;
     setSaveState("saving");
     setErrors([]);
     try {
       await pageApi.saveDraft(slug, { title: title.trim() || "Untitled", sections });
-      setSaveState("saved");
+      const unchanged = revision === editRevision.current;
+      setSaveState(unchanged ? "saved" : "dirty");
       setHasUnpublished(true);
-      return true;
+      await refreshPages();
+      return unchanged;
     } catch (err: any) {
       const details = err?.response?.data?.details;
       setErrors(Array.isArray(details) ? details.map((d: any) => (typeof d === "string" ? d : d.message)) : [errorMessage(err, "Couldn't save")]);
       setSaveState("dirty");
       return false;
-    }
-  }, [sections, slug, title]);
+    } finally { saveInFlight.current = false; }
+  }, [sections, slug, title, refreshPages]);
 
   const publish = async () => {
     if (saveState !== "saved" && !(await save())) return;
@@ -138,6 +167,10 @@ export default function PageEditor() {
       const res = await pageApi.publish(slug);
       setPublishedAt(res.data.publishedAt);
       setHasUnpublished(false);
+      await refreshPages();
+      previewReady.current = false;
+      setPreviewLoading(true);
+      setPreviewVersion(version => version + 1);
       setNotice("Published. Customers now see this version.");
     } catch (err) {
       setErrors([errorMessage(err, "Couldn't publish")]);
@@ -162,6 +195,24 @@ export default function PageEditor() {
     };
   }, [save, saveState]);
 
+  const openPage = async (nextSlug: string) => {
+    if (nextSlug === slug || switching.current || saveState === "saving") return;
+    switching.current = true;
+    try {
+      if (saveState === "dirty" && !(await save())) return;
+      router.push(`/store/pages/${encodeURIComponent(nextSlug)}`);
+    } finally { switching.current = false; }
+  };
+
+  useEffect(() => {
+    const navigate = (event: MessageEvent) => {
+      if (event.origin !== STOREFRONT_ORIGIN || event.source !== iframeRef.current?.contentWindow) return;
+      if (event.data?.type === "builder:navigate" && pages.some(page => page.slug === event.data.slug)) void openPage(event.data.slug);
+    };
+    window.addEventListener("message", navigate);
+    return () => window.removeEventListener("message", navigate);
+  });
+
   const selected = useMemo(() => sections?.find((s) => s.id === selectedId) ?? null, [sections, selectedId]);
 
   if (loadError) {
@@ -178,9 +229,10 @@ export default function PageEditor() {
     saveState === "saving" ? "Saving…" : saveState === "dirty" ? "Unsaved changes" : hasUnpublished ? "Draft saved, not published" : publishedAt ? "Published" : "Not published";
 
   return (
+    <PageLinksContext.Provider value={pages}>
     <div className="flex h-[100dvh] flex-col bg-gray-100">
       {/* Top bar */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-3">
         <Link
           href="/store"
           onClick={(e) => saveState !== "saved" && !window.confirm("Leave without saving your changes?") && e.preventDefault()}
@@ -192,12 +244,14 @@ export default function PageEditor() {
         <label htmlFor="page-title" className="sr-only">Page title</label>
         <input
           id="page-title"
+          maxLength={80}
           value={title}
           onChange={(e) => {
+            editRevision.current++;
             setTitle(e.target.value);
             setSaveState("dirty");
           }}
-          className="w-40 min-w-0 rounded-md border border-transparent px-2 py-1 text-sm font-semibold hover:border-gray-200 focus:border-gray-300 focus:outline-none sm:w-56"
+          className="w-16 min-w-0 flex-1 rounded-md border border-transparent px-2 py-1 text-sm font-semibold hover:border-gray-200 focus:border-gray-300 focus:outline-none sm:w-56 sm:flex-none"
         />
         <span className={`hidden text-xs sm:inline ${saveState === "dirty" ? "text-amber-600" : "text-gray-500"}`} role="status">
           {statusText}
@@ -219,7 +273,7 @@ export default function PageEditor() {
             ))}
           </div>
           <a
-            href={storefrontUrl(store.slug, slug === "home" ? "" : `/pages/${slug}`)}
+            href={storefrontUrl(store.slug, pagePath(slug))}
             target="_blank"
             rel="noreferrer"
             className="hidden rounded-md p-2 text-gray-600 hover:bg-gray-100 sm:block"
@@ -237,6 +291,14 @@ export default function PageEditor() {
         </div>
       </header>
 
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
+        <label htmlFor="editing-page" className="text-xs font-medium text-gray-500">Editing page</label>
+        <select id="editing-page" value={slug} disabled={saveState === "saving"} onChange={e => openPage(e.target.value)} className="min-w-0 max-w-[180px] rounded border border-gray-200 px-2 py-1.5 text-sm">
+          {pages.length ? pages.map(page => <option key={page.slug} value={page.slug}>{page.title}</option>) : <option value={slug}>{title}</option>}
+        </select>
+        <button type="button" aria-pressed={panel === "pages"} onClick={() => setPanel("pages")} className={`rounded px-3 py-1.5 text-xs font-medium ${panel === "pages" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700"}`}>Pages & navigation</button>
+        <button type="button" aria-pressed={panel === "sections"} onClick={() => setPanel("sections")} className={`rounded px-3 py-1.5 text-xs font-medium ${panel === "sections" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700"}`}>Sections</button>
+      </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Side panel */}
         <aside className="flex max-h-[45dvh] w-full shrink-0 flex-col border-b border-gray-200 bg-white md:max-h-none md:w-[340px] md:border-b-0 md:border-r">
@@ -250,7 +312,7 @@ export default function PageEditor() {
             </div>
           )}
 
-          {selected ? (
+          {panel === "pages" ? <StorePagesPanel pages={pages} currentSlug={slug} onOpen={openPage} onRefresh={async () => { await refreshPages(); previewReady.current = false; setPreviewLoading(true); setPreviewVersion(value => value + 1); }} beforeCreate={async () => saveState === "saving" ? false : saveState === "dirty" ? save() : true} /> : selected ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <button type="button" onClick={() => setSelectedId(null)} className="flex items-center gap-1 border-b border-gray-100 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
                 <CaretLeft size={14} /> All sections
@@ -259,7 +321,7 @@ export default function PageEditor() {
                 <h2 className="mb-4 text-sm font-semibold text-gray-900">{SECTIONS[selected.type].label}</h2>
                 <FieldEditor
                   fields={SECTIONS[selected.type].fields}
-                  values={selected.props}
+                  values={{ ...SECTIONS[selected.type].defaults, ...selected.props }}
                   onChange={(props) => update(sections.map((s) => (s.id === selected.id ? { ...s, props } : s)))}
                 />
               </div>
@@ -307,8 +369,10 @@ export default function PageEditor() {
         </aside>
 
         {/* Preview */}
-        <main className="flex min-h-0 flex-1 justify-center overflow-hidden p-0 md:p-4">
+        <main className="relative flex min-h-0 flex-1 justify-center overflow-hidden p-0 md:p-4">
+          {previewLoading && <div className="absolute inset-0 z-10 bg-gray-100 p-6" role="status"><p className="mb-5 text-sm text-gray-500">Loading your storefront…</p><div className="h-12 animate-pulse rounded-lg bg-white" /><div className="mt-5 h-[55%] animate-pulse rounded-lg bg-white" /></div>}
           <iframe
+            key={previewVersion}
             ref={iframeRef}
             title="Page preview"
             src={storefrontUrl(store.slug, "/preview")}
@@ -317,5 +381,6 @@ export default function PageEditor() {
         </main>
       </div>
     </div>
+    </PageLinksContext.Provider>
   );
 }

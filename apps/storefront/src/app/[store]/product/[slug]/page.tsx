@@ -2,13 +2,15 @@ import { themeSettings } from "@/lib/theme";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ProductGallery from "@/components/ProductGallery";
 import ProductPurchase from "@/components/ProductPurchase";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getStore } from "@/lib/api";
 
-type Params = { params: { store: string; slug: string } };
+type Params = { params: Promise<{ store: string; slug: string }> };
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params: pendingParams }: Params): Promise<Metadata> {
+  const params = await pendingParams;
   const data = await getProduct(params.store, params.slug);
   if (!data) return {};
   const { product } = data;
@@ -19,11 +21,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function ProductPage({ params }: Params) {
+export default async function ProductPage({ params: pendingParams }: Params) {
+  const params = await pendingParams;
   const [store, data] = await Promise.all([getStore(params.store), getProduct(params.store, params.slug)]);
   if (!store || !data) notFound();
   const { product, relatedProducts } = data;
-  const [main, ...rest] = product.images;
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
@@ -40,22 +43,11 @@ export default async function ProductPage({ params }: Params) {
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
-        <div className="flex flex-col gap-4">
-          <div className="aspect-product overflow-hidden rounded-media bg-store-surface">
-            {main && <img src={main.url} alt={main.alt ?? product.name} className="h-full w-full object-cover" />}
-          </div>
-          {rest.length > 0 && (
-            <div className="grid grid-cols-4 gap-3">
-              {rest.map((img) => (
-                <img key={img.url} src={img.url} alt={img.alt ?? ""} loading="lazy" className="aspect-square rounded-media object-cover" />
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery key={product.id} images={product.images} name={product.name} />
 
-        <div className="md:pt-4">
+        <div className="self-start md:sticky md:top-28 md:pt-4">
           <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{product.name}</h1>
-          <ProductPurchase product={product} store={store} />
+          <ProductPurchase key={product.id} product={product} store={store} />
           {product.description && (
             <div className="mt-10 max-w-[60ch] space-y-4 leading-relaxed text-store-muted">
               {product.description.split(/\n\s*\n/).map((p, i) => (

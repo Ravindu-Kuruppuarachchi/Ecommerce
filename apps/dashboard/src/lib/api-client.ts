@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { useAuthStore } from "@/stores/auth-store";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { API_URL } from "@/lib/config";
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -64,9 +64,12 @@ export const storeApi = {
 // Storefront pages (section builder)
 const pagePath = (slug: string) => `/stores/me/pages/${encodeURIComponent(slug)}`;
 export const pageApi = {
+  prepare: () => apiClient.post("/stores/me/pages/prepare"),
   list: () => apiClient.get("/stores/me/pages"),
   get: (slug: string) => apiClient.get(pagePath(slug)),
-  create: (title: string) => apiClient.post("/stores/me/pages", { title }),
+  create: (title: string, slug?: string, options?: { preset?: "blank" | "story" | "contact" | "category"; category?: string; showInNavigation?: boolean }) => apiClient.post("/stores/me/pages", { title, slug, ...options }),
+  setNavigation: (slug: string, showInNavigation: boolean) => apiClient.patch(`${pagePath(slug)}/navigation`, { showInNavigation }),
+  reorder: (slugs: string[]) => apiClient.put("/stores/me/pages/navigation/order", { slugs }),
   saveDraft: (slug: string, data: { title?: string; sections: unknown[] }) => apiClient.put(pagePath(slug), data),
   publish: (slug: string) => apiClient.post(`${pagePath(slug)}/publish`),
   delete: (slug: string) => apiClient.delete(pagePath(slug))
@@ -134,6 +137,11 @@ export function errorMessage(err: any, fallback = "Something went wrong"): strin
 // Dashboard API
 export const dashboardApi = {
   getStats: () => apiClient.get("/dashboard/stats"),
+};
+
+export const accountApi = {
+  changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+    apiClient.post("/auth/password", data),
 };
 
 export default apiClient;

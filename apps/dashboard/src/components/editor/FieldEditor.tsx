@@ -2,8 +2,11 @@
 
 import { useId, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash, UploadSimple } from "@phosphor-icons/react";
-import type { FieldDefinition } from "@repo/core";
+import { sectionButtons, type FieldDefinition } from "@repo/core";
+import { STOREFRONT_URL } from "@/lib/urls";
 import { errorMessage, uploadImage } from "@/lib/api-client";
+
+import { LinkDestination } from "./PageLinks";
 
 type Values = Record<string, unknown>;
 
@@ -15,6 +18,17 @@ const OPTION_LABELS: Record<string, string> = {
   subtle: "Subtle tint",
   accent: "Accent colour",
   inverse: "Inverted",
+  overlay: "Full-width image",
+  split: "Split screen",
+  editorial: "Editorial",
+  poster: "Oversized poster",
+  grid: "Classic grid",
+  compact: "Compact tiles",
+  duo: "Dual campaign",
+  rail: "Scrollable collection",
+  circles: "Circular categories",
+  normal: "Standard",
+  uppercase: "Uppercase",
 };
 
 function ImageField({ field, value, onChange, id }: { field: FieldDefinition; value: string; onChange: (v: string) => void; id: string }) {
@@ -38,9 +52,9 @@ function ImageField({ field, value, onChange, id }: { field: FieldDefinition; va
   return (
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-gray-700">{field.label}</label>
-      {value && <img src={value} alt="" className="mb-2 aspect-video w-full rounded-lg border border-gray-200 object-cover" />}
+      {value && <img src={value.startsWith("/template-assets/") ? `${STOREFRONT_URL}${value}` : value} alt="" className="mb-2 aspect-video w-full rounded-lg border border-gray-200 object-cover" />}
       <div className="flex gap-2">
-        <input id={id} type="url" value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://" className="input-field min-w-0 flex-1" />
+        <input id={id} type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://" className="input-field min-w-0 flex-1" />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="btn-secondary shrink-0 px-3" aria-label={`Upload ${field.label}`}>
           <UploadSimple size={16} />
           <span className="ml-1.5">{uploading ? "Uploading" : "Upload"}</span>
@@ -59,6 +73,7 @@ function ImageField({ field, value, onChange, id }: { field: FieldDefinition; va
 
 function ListField({ field, value, onChange }: { field: Extract<FieldDefinition, { kind: "list" }>; value: unknown; onChange: (v: Values[]) => void }) {
   const items = Array.isArray(value) ? (value as Values[]) : [];
+  const itemName = field.name === "buttons" || field.label === "Links" ? "button" : field.label === "Tiles" ? "tile" : field.name === "slides" ? "campaign" : "item";
   const move = (from: number, to: number) => {
     const next = [...items];
     const [item] = next.splice(from, 1);
@@ -73,20 +88,20 @@ function ListField({ field, value, onChange }: { field: Extract<FieldDefinition,
         {items.map((item, i) => (
           <div key={i} className="rounded-lg border border-gray-200 bg-gray-50/60 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500">Item {i + 1}</span>
+              <span className="text-xs font-medium capitalize text-gray-500">{itemName} {i + 1}</span>
               <div className="flex gap-1">
                 <IconButton label="Move up" disabled={i === 0} onClick={() => move(i, i - 1)}><ArrowUp size={14} /></IconButton>
                 <IconButton label="Move down" disabled={i === items.length - 1} onClick={() => move(i, i + 1)}><ArrowDown size={14} /></IconButton>
-                <IconButton label="Remove item" onClick={() => onChange(items.filter((_, j) => j !== i))}><Trash size={14} /></IconButton>
+                <IconButton label={`Remove ${itemName} ${i + 1}`} onClick={() => onChange(items.filter((_, j) => j !== i))}><Trash size={14} /></IconButton>
               </div>
             </div>
-            <FieldEditor fields={field.fields} values={item} onChange={(next) => onChange(items.map((it, j) => (j === i ? next : it)))} />
+            <FieldEditor fields={field.label === "Tiles" ? field.fields.filter(child => child.name !== "category") : field.fields} values={field.label === "Tiles" && item.link === undefined && typeof item.category === "string" ? { ...item, link: `/products?category=${encodeURIComponent(item.category)}` } : item} onChange={(next) => onChange(items.map((it, j) => (j === i ? next : it)))} />
           </div>
         ))}
       </div>
       {items.length < field.maxItems && (
         <button type="button" onClick={() => onChange([...items, {}])} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:underline">
-          <Plus size={14} /> Add item
+          <Plus size={14} /> Add {itemName}
         </button>
       )}
     </fieldset>
@@ -106,8 +121,9 @@ function Field({ field, value, onChange }: { field: FieldDefinition; value: unkn
   const label = <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-gray-700">{field.label}</label>;
 
   switch (field.kind) {
-    case "text":
     case "url":
+      return <LinkDestination id={id} label={field.label} value={str(value)} onChange={onChange} />;
+    case "text":
       return (
         <div>
           {label}
@@ -115,8 +131,7 @@ function Field({ field, value, onChange }: { field: FieldDefinition; value: unkn
             id={id}
             type="text"
             value={str(value)}
-            maxLength={field.kind === "text" ? field.maxLength : undefined}
-            placeholder={field.kind === "url" ? "/products or https://" : undefined}
+            maxLength={field.maxLength}
             onChange={(e) => onChange(e.target.value)}
             className="input-field"
           />
@@ -183,8 +198,8 @@ function Field({ field, value, onChange }: { field: FieldDefinition; value: unkn
 export default function FieldEditor({ fields, values, onChange }: { fields: readonly FieldDefinition[]; values: Values; onChange: (next: Values) => void }) {
   return (
     <div className="space-y-4">
-      {fields.map((field) => (
-        <Field key={field.name} field={field} value={values[field.name]} onChange={(v) => onChange({ ...values, [field.name]: v })} />
+      {fields.filter(field => !fields.some(other => other.name === "buttons") || !["ctaLabel", "ctaLink", "secondaryCtaLabel", "secondaryCtaLink"].includes(field.name)).map((field) => (
+        <Field key={field.name} field={field} value={field.name === "buttons" && values.buttons === undefined ? sectionButtons(values) : values[field.name]} onChange={(v) => onChange({ ...values, [field.name]: v })} />
       ))}
     </div>
   );

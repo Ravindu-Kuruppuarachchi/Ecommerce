@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { DISCOUNT_TYPES, toMinor } from "@repo/core";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -9,14 +9,7 @@ import { merchant, requireModule } from "../middleware/auth";
 export const discountsRouter = Router();
 discountsRouter.use(...merchant, requireModule("discounts"));
 
-const moneyish = z.union([z.string(), z.number()]).transform((v, ctx) => {
-  const cents = toMinor(v);
-  if (cents === null) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter an amount like 500 or 500.00" });
-    return z.NEVER;
-  }
-  return cents;
-});
+import { moneyInput as moneyish } from "../lib/validation";
 
 const discountSchema = z
   .object({

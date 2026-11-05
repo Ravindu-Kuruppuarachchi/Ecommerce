@@ -1,9 +1,6 @@
-// Stores live at /<store-slug> (or ?store=<slug>, rewritten by middleware).
-// Custom domains will map straight to a store; until then the bare root has nothing to show.
+import { redirect } from "next/navigation";
+
+/** The bare platform address opens the company site. Tenant routes stay on this app. */
 export default function Root() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center px-4 text-center">
-      <p className="text-zinc-600">Open a store at /&lt;store-name&gt;.</p>
-    </div>
-  );
+  redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3002");
 }

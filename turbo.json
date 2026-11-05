@@ -1,10 +1,19 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.local", "**/.env"],
-  "pipeline": {
+  "globalDependencies": [
+    "**/.env.local",
+    "**/.env"
+  ],
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "build/**"
+      ],
       "cache": false
     },
     "dev": {
@@ -12,7 +21,9 @@
       "persistent": true
     },
     "test": {
-      "outputs": ["coverage/**"],
+      "outputs": [
+        "coverage/**"
+      ],
       "cache": false
     },
     "lint": {
@@ -20,6 +31,29 @@
     },
     "type-check": {
       "outputs": []
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
     }
-  }
+  },
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "PORT",
+    "DASHBOARD_URL",
+    "STOREFRONT_URL",
+    "PUBLIC_API_URL",
+    "UPLOAD_DIR",
+    "TRUST_PROXY_HOPS",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_REDIRECT_URI",
+    "NEXT_PUBLIC_API_URL",
+    "API_URL",
+    "NEXT_PUBLIC_STOREFRONT_URL",
+    "NEXT_PUBLIC_DASHBOARD_URL",
+    "NEXT_BUILD_DIR"
+  ]
 }

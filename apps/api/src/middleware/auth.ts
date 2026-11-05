@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Store } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { MODULES, type ModuleKey } from "@repo/core";
@@ -16,8 +17,12 @@ declare global {
   }
 }
 
-export function signToken(user: { id: string; email: string }): string {
-  return jwt.sign({ sub: user.id, email: user.email }, env.jwtSecret, { expiresIn: "7d", algorithm: "HS256" });
+// A keyed fingerprint invalidates every older token when the password changes.
+// Neither the password nor its bcrypt hash is included in the token.
+const credentialTag = (password: string) => createHmac("sha256", env.jwtSecret).update(password).digest("hex");
+
+export function signToken(user: { id: string; email: string; password: string }): string {
+  return jwt.sign({ sub: user.id, credentialTag: credentialTag(user.password) }, env.jwtSecret, { expiresIn: "7d", algorithm: "HS256" });
 }
 
 export const requireAuth = asyncHandler(async (req, _res, next) => {
@@ -26,7 +31,12 @@ export const requireAuth = asyncHandler(async (req, _res, next) => {
   try {
     const payload = jwt.verify(token, env.jwtSecret, { algorithms: ["HS256"] }) as jwt.JwtPayload;
     if (typeof payload.sub !== "string") throw new Error("token has no subject");
-    req.user = { id: payload.sub, email: String(payload.email) };
+    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, email: true, password: true } });
+    if (!user || typeof payload.credentialTag !== "string") throw new Error("Session revoked");
+    const expected = Buffer.from(credentialTag(user.password));
+    const actual = Buffer.from(payload.credentialTag);
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw new Error("Session revoked");
+    req.user = { id: user.id, email: user.email };
   } catch {
     throw new HttpError(401, "Invalid or expired token");
   }

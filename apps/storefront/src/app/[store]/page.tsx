@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Sections from "@/components/sections/Sections";
 import { getPage, getStore, loadSectionProducts } from "@/lib/api";
 
-export default async function StoreHome({ params }: { params: { store: string } }) {
+export default async function StoreHome({ params: pendingParams }: { params: Promise<{ store: string }> }) {
+  const params = await pendingParams;
   const [store, page] = await Promise.all([getStore(params.store), getPage(params.store, HOME_PAGE_SLUG)]);
   if (!store) notFound();
 

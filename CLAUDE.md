@@ -4,9 +4,9 @@ Multi-tenant store builder for Sri Lankan merchants. The platform takes 10% of e
 
 ## Commands
 - pnpm isn't on PATH here; use `npx pnpm@10 <cmd>` (the repo pins `packageManager: pnpm@10.34.5`).
-- DB: `docker compose up -d postgres`, then `node_modules/.bin/prisma migrate dev`, then `npx pnpm@10 db:seed` (merchant: merchant@example.com, platform admin: admin@example.com, both password123; admins land on /platform).
+- DB: `docker compose up -d postgres`, then `node_modules/.bin/prisma migrate dev`, then optionally `ALLOW_DESTRUCTIVE_SEED=true npx pnpm@10 db:seed` on a disposable database only (merchant: merchant@example.com, platform admin: admin@example.com, both password123; admins land on /platform).
 - Regenerate the Prisma client with `npx pnpm@10 db:generate` (runs from packages/database; running prisma from the repo root fails because pnpm isn't on PATH).
-- Run: API `cd apps/api && ../../node_modules/.bin/tsx src/index.ts` (port 5000). Storefront `next dev -p 3001`. Dashboard `next dev -p 3000`; port 3000 is often taken by another local container, so use 3002, and start the API with `DASHBOARD_URL=http://localhost:3002` and the storefront with `NEXT_PUBLIC_DASHBOARD_URL=http://localhost:3002` (the editor preview only accepts messages from that origin).
+- Run one `pnpm dev` from the repo root: API on port 5000, storefront on 3001, dashboard on 3002. Keep `DASHBOARD_URL` in apps/api/.env.local and `NEXT_PUBLIC_DASHBOARD_URL` in apps/storefront/.env.local set to `http://localhost:3002` (the editor preview only accepts messages from that origin). Port 3000 is left to other local services.
 - Type-check each package: `../../node_modules/.bin/tsc --noEmit -p .` from its folder.
 
 ## Rules

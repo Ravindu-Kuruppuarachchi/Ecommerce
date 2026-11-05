@@ -6,6 +6,8 @@ import { CheckCircle, Tag, X } from "@phosphor-icons/react/dist/ssr";
 import { applyBps, formatMoney, SRI_LANKA_DISTRICTS } from "@repo/core";
 import { API_URL } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { useCustomer, customerRequest } from "@/lib/customer";
+import CustomerSignIn from "./CustomerSignIn";
 import { track } from "@/lib/track";
 import type { PublicStore } from "@/lib/types";
 
@@ -28,6 +30,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 
 export default function CheckoutForm({ store }: { store: PublicStore }) {
   const cart = useCart();
+  const account = useCustomer();
   const [form, setForm] = useState<FormState>({ email: "", phone: "", name: "", line1: "", line2: "", city: "", district: "", postalCode: "" });
   const [codeInput, setCodeInput] = useState("");
   const [code, setCode] = useState<string | null>(null);
@@ -37,6 +40,14 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [placed, setPlaced] = useState<{ orderNumber: number; totalCents: number } | null>(null);
+
+  useEffect(() => {
+    if (!account.customer) return;
+    const customer = account.customer;
+    setForm(current => ({ ...current, ...customer.savedAddress, email: customer.email,
+      name: customer.savedAddress?.name || [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+      phone: customer.savedAddress?.phone || customer.phone || "" }));
+  }, [account.customer]);
 
   const { shipping: shippingOn, discounts: discountsOn } = store.features;
   const money = (cents: number) => formatMoney(cents, store.currency);
@@ -100,13 +111,13 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!account.customer || submitting) return;
     setSubmitting(true);
     setError("");
     try {
       const optional = (v: string) => (v.trim() ? v.trim() : undefined);
-      const order = await post<{ orderNumber: number; totalCents: number }>(`${API_URL}/orders`, {
+      const order = await customerRequest<{ orderNumber: number; totalCents: number }>(store.slug, "checkout", { method: "POST", body: JSON.stringify({
         storeSlug: store.slug,
-        email: form.email,
         paymentMethod: "cod",
         discountCode: code ?? undefined,
         items: cart.items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
@@ -119,10 +130,11 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
           district: optional(form.district),
           postalCode: optional(form.postalCode),
         },
-      });
+      }) });
       cart.clear();
       setPlaced(order);
     } catch (err) {
+      if ((err as { status?: number }).status === 401) await account.refresh();
       setError(err instanceof Error ? err.message : "We couldn't place your order");
     } finally {
       setSubmitting(false);
@@ -144,6 +156,10 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
   }
 
   if (!cart.ready) return <div className="mx-auto h-96 max-w-5xl animate-pulse px-4 py-12 sm:px-8"><div className="h-full rounded-media bg-store-surface" /></div>;
+
+  if (account.loading) return <p role="status" className="px-4 py-16 text-center text-store-muted">Loading your account…</p>;
+  if (account.error) return <div className="px-4 py-16 text-center"><p role="alert">{account.error}</p><button type="button" className="btn-secondary mt-4" onClick={() => void account.refresh()}>Try again</button></div>;
+  if (!account.customer) return <CustomerSignIn storeSlug={store.slug} checkout />;
 
   if (cart.items.length === 0) {
     return (
@@ -167,7 +183,7 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
     <div className="mx-auto grid max-w-5xl gap-12 px-4 py-12 sm:px-8 lg:grid-cols-[1fr_380px]">
       <form onSubmit={submit} className="flex flex-col gap-5">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Checkout</h1>
-        {field("email", "Email", { type: "email", autoComplete: "email", required: true })}
+        <p className="text-sm text-store-muted">Signed in as <strong className="text-store-fg">{account.customer.email}</strong> · <Link href={`/${store.slug}/account`} className="underline">My account</Link></p>
         {field("phone", "Mobile number", { type: "tel", autoComplete: "tel", required: true }, "The courier calls this number on delivery day.")}
         {field("name", "Full name", { autoComplete: "name", required: true })}
         {field("line1", "Address", { autoComplete: "address-line1", required: true })}

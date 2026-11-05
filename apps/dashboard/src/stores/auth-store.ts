@@ -47,7 +47,7 @@ interface AuthStore {
   fetchMe: (token: string) => Promise<void>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { API_URL } from "@/lib/config";
 
 /** The API's message (and first validation detail), so the form can show what went wrong. */
 async function apiError(response: Response, fallback: string): Promise<Error> {

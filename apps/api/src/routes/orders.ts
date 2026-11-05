@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { asyncHandler, HttpError, parseBody } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { merchant } from "../middleware/auth";
+import { requireCustomerAuth } from "../middleware/customer-auth";
+import { customerAddressSchema } from "@repo/core";
 import { rateLimit } from "../middleware/rate-limit";
 import {
   FULFILLMENT_STATUSES,
@@ -17,32 +19,24 @@ export const ordersRouter = Router();
 
 const checkoutSchema = z.object({
   storeSlug: z.string().min(1).max(60),
-  email: z.string().trim().email(),
   paymentMethod: z.enum(PAYMENT_METHODS),
   items: z
     .array(z.object({ productId: z.string().min(1).max(40), variantId: z.string().min(1).max(40).optional(), quantity: z.number().int().min(1).max(100) }))
     .min(1)
     .max(50),
-  shippingAddress: z.object({
-    name: z.string().trim().min(1).max(120),
-    phone: z.string().trim().min(7).max(20),
-    line1: z.string().trim().min(1).max(200),
-    line2: z.string().trim().max(200).optional(),
-    city: z.string().trim().min(1).max(80),
-    district: z.string().trim().max(80).optional(),
-    postalCode: z.string().trim().max(10).optional(),
-  }),
+  shippingAddress: customerAddressSchema,
   discountCode: z.string().trim().max(40).optional(),
   notes: z.string().max(1000).optional(),
 });
 
-// Public checkout. Limited per IP to blunt stock-hoarding bots.
+// Shared checkout for every template. Customer identity always comes from the session.
 ordersRouter.post(
   "/",
-  rateLimit({ windowMs: 10 * 60_000, max: 30 }),
+  requireCustomerAuth,
+  rateLimit({ windowMs: 10 * 60_000, max: 30, keyGenerator: req => req.customer!.id }),
   asyncHandler(async (req, res) => {
     const { storeSlug, ...input } = parseBody(checkoutSchema, req.body);
-    const order = await placeOrder(storeSlug, input);
+    const order = await placeOrder(storeSlug, input, req.customer!);
     // The customer gets a receipt, not the platform's fee split.
     res.status(201).json({
       id: order.id,

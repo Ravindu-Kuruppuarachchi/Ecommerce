@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
 import { formatMoney } from "@repo/core";
 import LaunchChecklist from "@/components/LaunchChecklist";
+import { API_URL } from "@/lib/config";
 import { storefrontUrl } from "@/lib/urls";
 
 // ============ STAT CARD ============
@@ -71,8 +72,6 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
       const headers = { Authorization: `Bearer ${token}` };
 
       const [statsRes, ordersRes] = await Promise.all([

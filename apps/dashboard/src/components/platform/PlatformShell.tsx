@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChartLine, ClockCounterClockwise, List, ShieldCheck, SignOut, Storefront, X } from "@phosphor-icons/react";
+import VoxelBrand from "../VoxelBrand";
 import { useAuthStore, useHasHydrated } from "@/stores/auth-store";
 
 const NAV = [
@@ -34,9 +35,7 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
   const nav = (
     <nav aria-label="Platform" className="flex h-full flex-col">
       <div className="border-b border-white/10 px-5 py-5">
-        <p className="flex items-center gap-2 text-lg font-bold tracking-tight text-white">
-          <ShieldCheck size={20} weight="fill" /> ShopHub
-        </p>
+        <Link href="/" aria-label="Shophub home" className="inline-block rounded-lg bg-white px-3 py-2"><VoxelBrand compact /></Link>
         <p className="mt-0.5 text-xs text-gray-400">Platform admin</p>
       </div>
       <div className="flex-1 space-y-1 px-3 py-4">

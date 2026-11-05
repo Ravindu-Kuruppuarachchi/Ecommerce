@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { storeApi } from "@/lib/api-client";
-import Link from "next/link";
+import { storefrontUrl } from "@/lib/urls";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -20,14 +21,6 @@ export default function SettingsPage() {
     name: "",
     description: "",
     taxRate: "0",
-  });
-
-  const [themeForm, setThemeForm] = useState({
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#3b82f6",
-    fontFamily: "Inter",
-    headerStyle: "minimal",
   });
 
   useEffect(() => {
@@ -47,15 +40,7 @@ export default function SettingsPage() {
         description: store.description || "",
         taxRate: String((store.taxBps ?? 0) / 100),
       });
-      if (store.theme) {
-        setThemeForm({
-          primaryColor: store.theme.primaryColor || "#000000",
-          secondaryColor: store.theme.secondaryColor || "#FFFFFF",
-          accentColor: store.theme.accentColor || "#3b82f6",
-          fontFamily: store.theme.fontFamily || "Inter",
-          headerStyle: store.theme.headerStyle || "minimal",
-        });
-      }
+
     } catch (error) {
       console.error("Failed to load store:", error);
     } finally {
@@ -81,20 +66,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveTheme = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setMessage(null);
-    try {
-      await storeApi.updateTheme(themeForm);
-      setMessage({ type: "success", text: "Theme updated!" });
-    } catch (error) {
-      setMessage({ type: "error", text: "Failed to update theme" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   if (!token) return null;
 
   if (isLoading) {
@@ -112,7 +83,7 @@ export default function SettingsPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Store Settings</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Configure your store details and theme
+            Manage your store details, tax rate and account password
           </p>
         </div>
 
@@ -179,7 +150,7 @@ export default function SettingsPage() {
                 type="number"
                 step="0.1"
                 min="0"
-                max="100"
+                max="50"
                 value={storeForm.taxRate}
                 onChange={(e) =>
                   setStoreForm({ ...storeForm, taxRate: e.target.value })
@@ -193,9 +164,9 @@ export default function SettingsPage() {
               <p className="text-xs font-medium text-gray-500 mb-1">
                 Your Storefront URL
               </p>
-              <code className="text-sm text-gray-700 font-mono">
-                http://localhost:3001?store={authStore?.slug}
-              </code>
+              {authStore && <a href={storefrontUrl(authStore.slug)} target="_blank" rel="noreferrer" className="break-all text-sm text-brand-700 underline">
+                {storefrontUrl(authStore.slug)}
+              </a>}
             </div>
           </div>
 
@@ -206,219 +177,8 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        {/* Theme Settings */}
-        <form
-          onSubmit={handleSaveTheme}
-          className="bg-white rounded-xl shadow-sm border border-gray-100"
-        >
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-              Theme & Appearance
-            </h2>
-          </div>
+        <ChangePasswordForm />
 
-          <div className="p-6 space-y-5">
-            {/* Color Pickers */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Primary Color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={themeForm.primaryColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        primaryColor: e.target.value,
-                      })
-                    }
-                    className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={themeForm.primaryColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        primaryColor: e.target.value,
-                      })
-                    }
-                    className="input-field text-xs font-mono flex-1"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Secondary Color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={themeForm.secondaryColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        secondaryColor: e.target.value,
-                      })
-                    }
-                    className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={themeForm.secondaryColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        secondaryColor: e.target.value,
-                      })
-                    }
-                    className="input-field text-xs font-mono flex-1"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Accent Color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={themeForm.accentColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        accentColor: e.target.value,
-                      })
-                    }
-                    className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={themeForm.accentColor}
-                    onChange={(e) =>
-                      setThemeForm({
-                        ...themeForm,
-                        accentColor: e.target.value,
-                      })
-                    }
-                    className="input-field text-xs font-mono flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Font Family */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Font Family
-              </label>
-              <select
-                value={themeForm.fontFamily}
-                onChange={(e) =>
-                  setThemeForm({ ...themeForm, fontFamily: e.target.value })
-                }
-                className="input-field"
-              >
-                <option value="Inter">Inter</option>
-                <option value="Roboto">Roboto</option>
-                <option value="Playfair Display">Playfair Display</option>
-                <option value="Outfit">Outfit</option>
-                <option value="system-ui">System Default</option>
-              </select>
-            </div>
-
-            {/* Header Style */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Store Template
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: "minimal", label: "Minimal", desc: "Clean & modern" },
-                  {
-                    value: "standard",
-                    label: "Standard",
-                    desc: "Classic e-commerce",
-                  },
-                  {
-                    value: "premium",
-                    label: "Premium",
-                    desc: "Bold & editorial",
-                  },
-                ].map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                      themeForm.headerStyle === opt.value
-                        ? "border-brand-600 bg-brand-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="headerStyle"
-                      value={opt.value}
-                      checked={themeForm.headerStyle === opt.value}
-                      onChange={(e) =>
-                        setThemeForm({
-                          ...themeForm,
-                          headerStyle: e.target.value,
-                        })
-                      }
-                      className="sr-only"
-                    />
-                    <p className="font-semibold text-sm text-gray-900">
-                      {opt.label}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Live Preview */}
-            <div className="rounded-xl overflow-hidden border border-gray-200">
-              <div
-                className="px-6 py-4 text-center"
-                style={{
-                  backgroundColor: themeForm.primaryColor,
-                  color: themeForm.secondaryColor,
-                  fontFamily: themeForm.fontFamily,
-                }}
-              >
-                <p className="font-bold text-lg">{storeForm.name || "Your Store"}</p>
-                <p className="text-sm opacity-70">Live theme preview</p>
-              </div>
-              <div className="p-4 bg-gray-50 flex items-center justify-center gap-3">
-                <div
-                  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                  style={{ backgroundColor: themeForm.accentColor }}
-                >
-                  Add to Cart
-                </div>
-                <div
-                  className="px-4 py-2 rounded-lg text-sm font-medium border"
-                  style={{
-                    borderColor: themeForm.accentColor,
-                    color: themeForm.accentColor,
-                  }}
-                >
-                  View Details
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-100">
-            <button type="submit" disabled={isSaving} className="btn-primary">
-              {isSaving ? "Saving…" : "Save Theme"}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

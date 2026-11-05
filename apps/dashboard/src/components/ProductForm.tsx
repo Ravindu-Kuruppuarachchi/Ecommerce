@@ -246,7 +246,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         // Only send variant data when the store can use it, so editing without Inventory never wipes variants.
         ...(inventoryOn && {
           options: complete,
-          variants: variants.map((v) => ({
+          variants: (hasVariants ? variants : []).map((v) => ({
             id: v.id,
             optionValues: v.optionValues,
             sku: v.sku.trim() || null,

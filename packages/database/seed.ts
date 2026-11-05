@@ -209,12 +209,13 @@ async function seedOtherStores() {
         ownerId: owner.id,
         status: def.status,
         templateKey: template.key,
+        pageSetupVersion: 1,
         createdAt,
         theme: { create: { ...template.theme, settings: template.theme.settings as unknown as Prisma.InputJsonValue } },
         pages: {
           create: template.pages.map((page) => {
             const sections = page.sections as unknown as Prisma.InputJsonValue;
-            return { slug: page.slug, title: page.title, draftSections: sections, publishedSections: sections, publishedAt: createdAt, createdAt };
+            return { slug: page.slug, title: page.title, showInNavigation: page.showInNavigation, navigationPosition: page.navigationPosition, draftSections: sections, publishedSections: sections, publishedAt: createdAt, createdAt };
           }),
         },
       },
@@ -241,6 +242,9 @@ async function seedOtherStores() {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production" || process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error("Demo seed deletes existing data. Only on a disposable development database, run ALLOW_DESTRUCTIVE_SEED=true pnpm db:seed. Never run in production.");
+  }
   console.log("Seeding database...");
 
   // Children first; ledger rows restrict deletes on orders and stores.
@@ -280,11 +284,12 @@ async function main() {
       status: "live",
       taxBps: 0,
       templateKey: template.key,
+      pageSetupVersion: 1,
       theme: { create: { ...template.theme, settings: template.theme.settings as unknown as Prisma.InputJsonValue } },
       pages: {
         create: template.pages.map((page) => {
           const sections = customize(page.slug, page.sections) as unknown as Prisma.InputJsonValue;
-          return { slug: page.slug, title: page.title, draftSections: sections, publishedSections: sections, publishedAt: new Date() };
+          return { slug: page.slug, title: page.title, showInNavigation: page.showInNavigation, navigationPosition: page.navigationPosition, draftSections: sections, publishedSections: sections, publishedAt: new Date() };
         }),
       },
       modules: { create: ["customers", "shipping", "discounts", "inventory", "analytics"].map((key) => ({ key })) },
@@ -360,7 +365,7 @@ Done.
   Merchant login: merchant@example.com / password123
   Platform admin: admin@example.com / password123
   Store:          ${store.slug}
-  Dashboard:      http://localhost:3000
+  Dashboard:      http://localhost:3002
   Storefront:     http://localhost:3001?store=${store.slug}`);
 }
 
