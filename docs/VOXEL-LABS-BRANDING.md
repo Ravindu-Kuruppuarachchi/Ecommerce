@@ -6,7 +6,7 @@ Updated 4 November 2026.
 
 The platform is a Voxel Labs product. The reference is [Voxel Labs](https://voxel-lab.vercel.app/), with the original wordmark supplied by the team. The company site's pale neutral surfaces, near-black typography, orange actions and geometric structure inform the commerce platform. The product copy describes the store builder's actual features, rather than the company's robotics and AI services.
 
-The public landing page, merchant account screens, merchant shell and platform-admin shell now share that identity. Merchant storefronts continue to use their own themes and logos.
+The public landing page, merchant account screens, merchant shell and platform-admin shell now share that identity. Merchant storefronts continue to use their own themes and logos. In the merchant dashboard, the store name leads both the sidebar and mobile header; a smaller “Powered by Voxel Labs” link sits beneath it. The same identity component is reused in the mobile navigation drawer.
 
 ## Entry points
 

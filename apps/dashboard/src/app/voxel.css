@@ -124,3 +124,269 @@
 @media(prefers-reduced-motion:reduce) {
  .voxel-site *, .voxel-account * { scroll-behavior:auto; transition:none; animation:none; }
 }
+
+/* Public marketing pages. Kept scoped to avoid changing the merchant dashboard. */
+.voxel-site { background:#faf9f6; --voxel-accent:#ff5b05; --voxel-muted:#64645f; }
+.voxel-site h1,.voxel-site h2,.voxel-site h3 { text-wrap:balance; }
+.voxel-site p { text-wrap:pretty; }
+.voxel-site a,.voxel-site button,.voxel-site input,.voxel-site select,.voxel-site summary { -webkit-tap-highlight-color:transparent; }
+.vl-header { border-bottom:1px solid #e9e7e1; background:#faf9f6ed; }
+.voxel-header { min-height:96px; }
+.voxel-nav a[aria-current="page"] { color:#a63800; box-shadow:0 2px #e94e00; }
+.voxel-hero { padding-block:68px 90px; grid-template-columns:1fr 1fr; gap:52px; min-height:720px; }
+.voxel-hero h1 { font-size:clamp(48px,5.1vw,72px); letter-spacing:-.065em; line-height:1.06; }
+.voxel-hero h1 .vl-orange { color:#cc4400; }
+.voxel-hero-description { max-width:430px; font-size:17px; line-height:1.75; }
+.voxel-eyebrow { color:#a43a09; letter-spacing:.13em; font-size:11px; }
+.vl-live-dot { display:inline-block; width:7px; height:7px; background:#de4c0c; border-radius:50%; margin-right:8px; box-shadow:0 0 0 4px #f6e6db; }
+.vl-hero-note { display:flex; align-items:center; gap:8px; font-size:11px; color:#65645f; margin-top:21px; }
+.vl-hero-note svg { color:#4f545e; }
+.vl-hero-note span { margin-inline:3px; }
+.vl-hero-art { position:relative; padding:34px 18px 57px 36px; background:#eae8df; border-radius:14px; background-image:radial-gradient(#c7c4b8 .8px,transparent .8px); background-size:16px 16px; }
+.vl-art-label { display:flex; justify-content:space-between; margin-bottom:18px; padding-right:5px; font-size:9px; letter-spacing:.14em; color:#4b505a; }
+.vl-hero-art .voxel-preview-frame { transform:rotate(-2deg); box-shadow:0 24px 45px #29281f20; }
+.vl-hero-art .voxel-preview-frame>img { aspect-ratio:1.08; }
+.vl-browser-dots { font-size:8px; color:#b9b6ad; margin-right:12px; letter-spacing:3px; }
+.vl-mini-product { position:absolute; bottom:12px; left:-25px; padding:12px; display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e4e2db; border-radius:10px; box-shadow:0 12px 32px #1f212615; transform:rotate(3deg); }
+.vl-mini-product>img { width:90px; height:106px; object-fit:cover; border-radius:5px; }
+.vl-mini-product>div { display:grid; gap:3px; padding-right:15px; font-size:11px; }
+.vl-mini-product strong { font-size:16px; font-weight:600; }
+.vl-swatch-row { display:flex; gap:5px; margin-top:12px; }
+.vl-swatch-row i { width:13px; height:13px; background:#d6b5a0; border-radius:50%; }
+.vl-swatch-row i:nth-child(2) { background:#484d56; }.vl-swatch-row i:nth-child(3) { background:#e8dfcc; }
+.vl-art-tag { position:absolute; right:10px; bottom:-24px; display:flex; align-items:center; gap:10px; padding:16px; font-size:10px; background:#d4d5d8; border-radius:8px; transform:rotate(-4deg); box-shadow:0 4px 14px #1213150a; }
+.vl-art-tag>span { font-size:30px; color:#42464f; }
+.vl-industry-strip { border-block:1px solid #e6e3db; padding-block:25px; }
+.vl-industry-strip .voxel-wrap { display:flex; align-items:center; justify-content:space-between; gap:25px; }
+.vl-industry-strip span { font-size:11px; color:#6b6961; max-width:125px; }
+.vl-industry-strip p { display:flex; flex-wrap:wrap; align-items:center; gap:25px; font-size:14px; font-weight:500; }
+.vl-industry-strip b { color:#b96a3e; font-size:22px; font-weight:400; }
+.vl-section-top { display:flex; justify-content:space-between; align-items:end; gap:32px; margin-bottom:38px; }
+.vl-section-top .voxel-section-heading { margin:0; }
+.vl-section-top>p,.vl-section-top>div>p:not(.voxel-eyebrow) { font-size:14px; color:#64645f; line-height:1.8; }
+.vl-section-top>div>.voxel-text-link { margin-top:20px; }
+.voxel-design-image { border-color:#e0ddd5; background:#ece9e1; padding:16px 16px 0; border-radius:9px; }
+.voxel-design-image img { aspect-ratio:.92; border-radius:5px 5px 0 0; box-shadow:0 0 18px #0000000b; }
+.voxel-design-grid article:nth-child(2) .voxel-design-image { background:#e0e1e3; }
+.voxel-design-grid article:nth-child(3) .voxel-design-image { background:#e0e1e2; }
+.voxel-design-caption h3 { font-size:21px; }
+.vl-caption { color:#69675f; font-size:11px; line-height:1.7; margin-top:24px; }
+.vl-editorial { background:#1f2125; color:#f8f7ed; padding-block:70px; }
+.vl-editorial-grid { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
+.vl-editorial-photo { position:relative; }.vl-editorial-photo>img { height:540px; width:100%; object-fit:cover; border-radius:4px; }
+.vl-editorial-photo>span { position:absolute; bottom:0; left:0; right:0; padding:65px 25px 24px; font-size:12px; background:linear-gradient(transparent,#000a); }
+.vl-editorial-copy .voxel-eyebrow { color:#ecab7c; }.vl-editorial-copy h2 { font-size:clamp(34px,3.5vw,47px); line-height:1.14; letter-spacing:-.045em; }.vl-editorial-copy h2 em { font-style:normal; color:#babcbf; }
+.vl-editorial-copy>p:not(.voxel-eyebrow) { color:#c0c2c5; margin-top:23px; font-size:14px; line-height:1.85; }.vl-editorial-copy>.voxel-text-link { margin-top:28px; color:#f2c3a1; }
+.vl-materials { display:flex; align-items:center; gap:10px; margin-top:42px; padding-top:28px; border-top:1px solid #ffffff25; }.vl-materials>img { height:65px; width:57px; object-fit:cover; border-radius:4px; }.vl-materials span { font-size:11px; margin-left:10px; color:#c0c2c5; }
+.vl-tools-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }.vl-tools-grid article { padding:30px; background:#efeee8; border-radius:8px; display:flex; flex-direction:column; }.vl-tools-grid article:nth-child(2) { background:#e5e6e7; }.vl-tools-grid article:nth-child(3) { background:#f3e7dd; }
+.vl-tool-icon { display:flex; justify-content:space-between; align-items:center; margin-bottom:38px; }.vl-tool-icon>span { font-size:11px; color:#686f7d; }.vl-tools-grid h3 { font-size:24px; line-height:1.25; letter-spacing:-.035em; font-weight:600; }.vl-tools-grid p { font-size:14px; color:#565b66; line-height:1.8; margin-top:16px; margin-bottom:28px; }.vl-tools-grid a { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:600; margin-top:auto; }
+.vl-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:40px; }.vl-steps article { border-top:1px solid #d9d7cd; padding-top:25px; }.vl-steps article>span { color:#ab450e; font-size:13px; }.vl-steps h3 { font-size:20px; font-weight:600; letter-spacing:-.03em; margin-top:28px; }.vl-steps p { color:#64645f; font-size:14px; line-height:1.85; margin-top:12px; }
+.vl-tools-grid + section { padding-top:0; }
+.vl-pricing-teaser { padding:54px; background:#efece3; display:flex; align-items:center; justify-content:space-between; gap:40px; border-radius:10px; }.vl-pricing-teaser h2 { font-size:36px; letter-spacing:-.045em; line-height:1.2; font-weight:600; }.vl-pricing-teaser p:not(.voxel-eyebrow) { font-size:13px; line-height:1.8; color:#64645f; margin-top:18px; }.vl-pricing-teaser .voxel-text-link { margin-top:24px; }.vl-price-stamp { min-width:245px; display:grid; text-align:center; padding:30px; border:1px solid #d4d0c2; border-radius:50%; aspect-ratio:1; align-content:center; gap:9px; }.vl-price-stamp>span { font-size:9px; letter-spacing:.07em; }.vl-price-stamp strong { font-size:65px; letter-spacing:-.06em; font-weight:600; }
+.vl-faq { display:grid; grid-template-columns:.9fr 1.1fr; gap:80px; }.vl-faq details { border-bottom:1px solid #dedbd2; }.vl-faq details:first-child { border-top:1px solid #dedbd2; }.vl-faq summary { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-block:23px; cursor:pointer; font-size:14px; font-weight:550; list-style:none; }.vl-faq summary::-webkit-details-marker { display:none; }.vl-faq summary>span { font-size:24px; font-weight:300; transition:transform .2s; }.vl-faq details[open] summary>span { transform:rotate(45deg); }.vl-faq details>p { font-size:13px; line-height:1.85; padding-bottom:24px; color:#64645f; }
+.vl-cta { padding:60px; display:flex; align-items:center; justify-content:space-between; gap:35px; background:#e9ad8f; color:#17130f; border-radius:12px; margin-bottom:75px; position:relative; }.vl-cta h2 { font-size:clamp(36px,4vw,54px); line-height:1.12; letter-spacing:-.05em; font-weight:600; }.vl-cta p:not(.voxel-eyebrow) { margin-top:22px; font-size:14px; color:#302016; }.vl-cta .voxel-eyebrow { color:#302016; }.vl-cta .voxel-button { background:#191715; color:#fff; padding:19px 25px; }.vl-cta .voxel-button:hover { background:#36302b; }
+.vl-footer { padding-block:10px 30px; }.vl-footer-top { display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr; gap:35px; padding-bottom:48px; }.vl-footer-top>div>p { font-size:13px; color:#68675e; margin-top:24px; line-height:1.8; }.vl-footer nav { display:flex; flex-direction:column; gap:13px; font-size:12px; }.vl-footer nav h2 { font-size:12px; font-weight:650; margin-bottom:8px; }.vl-footer nav a { color:#69675f; }.vl-footer nav a:hover { color:#a63800; }.vl-footer-bottom { display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; padding-top:24px; border-top:1px solid #dedbd2; color:#69675f; font-size:10px; }
+.vl-page-heading { padding-block:86px 62px; max-width:1200px; }.vl-page-heading h1 { font-size:clamp(44px,5.4vw,72px); font-weight:650; letter-spacing:-.06em; line-height:1.08; max-width:900px; }.vl-page-heading>p:last-child { max-width:620px; font-size:17px; line-height:1.8; color:#64645f; margin-top:25px; }
+.vl-gallery { padding-bottom:90px; }.vl-gallery-controls { display:flex; justify-content:space-between; gap:25px; padding-block:24px; border-block:1px solid #dedbd2; }.vl-search { display:flex; align-items:center; gap:12px; flex:1; max-width:440px; }.vl-search input { background:transparent; width:100%; font-size:15px; padding:10px 3px; outline-offset:5px; }.vl-select { display:flex; align-items:center; gap:14px; font-size:12px; color:#69675f; }.vl-select select { border:1px solid #d6d3ca; padding:12px 35px 12px 14px; background:#fff; border-radius:5px; color:#222; max-width:100%; }
+.vl-filter-tags { display:flex; gap:8px; flex-wrap:wrap; margin-block:25px 26px; }.vl-filter-tags button { padding:8px 16px; border:1px solid #dcd8ce; border-radius:30px; font-size:12px; }.vl-filter-tags button[aria-pressed="true"] { color:white; background:#23252a; border-color:#23252a; }.vl-results { font-size:12px; color:#69675f; margin-block:26px; }.vl-gallery-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:45px 24px; }.vl-gallery-image { position:relative; display:block; aspect-ratio:.95; overflow:hidden; border-radius:8px; background:#e8e5db; }.vl-gallery-image>img { width:100%; height:100%; object-fit:cover; transition:transform .35s; }.vl-gallery-image:hover>img { transform:scale(1.035); }.vl-gallery-image.is-preview { padding:15px 15px 0; }.vl-gallery-image.is-preview>img { object-position:top; }.vl-gallery-name { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#0005; color:white; font-size:48px; letter-spacing:-.04em; font-weight:600; }.vl-gallery-name small { font-size:12px; font-weight:400; letter-spacing:.04em; margin-top:5px; }.vl-gallery-open { position:absolute; bottom:12px; right:12px; left:12px; display:flex; justify-content:space-between; align-items:center; background:#fffef4f2; color:#16181b; padding:11px 15px; border-radius:4px; font-size:12px; }.vl-gallery-grid h2 { font-size:21px; font-weight:600; }.vl-gallery-grid .voxel-design-caption>span { font-size:10px; background:#eeece5; padding:4px 8px; border-radius:4px; }.vl-gallery-grid article>p { font-size:12px; color:#64645f; margin-top:10px; line-height:1.8; }.vl-empty { padding:70px 20px; text-align:center; }.vl-empty h2 { font-size:28px; }.vl-empty p { margin-block:12px 25px; }
+.vl-feature-stories { padding-bottom:20px; }.vl-feature-story { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; padding-block:45px; scroll-margin-top:30px; }.vl-feature-story:nth-child(even)>div:first-child { order:2; }.vl-feature-photo { position:relative; }.vl-feature-photo>img { width:100%; height:440px; object-fit:cover; border-radius:8px; }.vl-feature-photo>span { position:absolute; left:20px; bottom:20px; padding:8px 14px; border-radius:3px; background:#fffffff0; color:#25262a; font-size:10px; letter-spacing:.1em; }.vl-feature-story h2 { font-size:43px; letter-spacing:-.05em; line-height:1.15; font-weight:600; }.vl-feature-story p:not(.voxel-eyebrow) { font-size:14px; color:#64645f; line-height:1.85; margin-top:20px; }
+.vl-included { display:grid; gap:14px; margin-block:28px; }.vl-included li { display:flex; align-items:flex-start; gap:12px; font-size:13px; }.vl-included svg { flex-shrink:0; margin-top:2px; color:#4d525c; }.vl-availability { margin-bottom:70px; padding:28px 35px; border-left:3px solid #90939a; background:#eaeaeb; }.vl-availability h2 { font-size:18px; font-weight:600; }.vl-availability p { font-size:13px; color:#64645f; line-height:1.8; margin-top:10px; max-width:850px; }
+.vl-pricing-layout { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start; }.vl-plan { padding:45px; background:#e5e6e7; border:1px solid #d1d2d5; border-radius:12px; }.vl-pill { display:inline-block; background:#cdced1; color:#3c4048; border-radius:30px; padding:6px 12px; font-size:10px; }.vl-plan h2 { font-size:25px; font-weight:600; margin-block:20px 30px; letter-spacing:-.03em; }.vl-plan-note { color:#535863; font-size:12px; line-height:1.8; margin-top:22px; }.vl-plan .voxel-button { width:100%; }.vl-calculator { padding:40px; border:1px solid #dedbd2; border-radius:12px; }.vl-calculator h2 { font-size:30px; font-weight:600; letter-spacing:-.04em; }.vl-calculator>p:not(.voxel-eyebrow) { color:#64645f; font-size:13px; margin-top:16px; }.vl-calculator label { display:block; margin-top:30px; font-size:12px; font-weight:600; }.vl-calculator input { display:block; width:100%; background:white; border:1px solid #b2b4b9; border-radius:6px; font-size:25px; padding:14px; margin-block:9px 25px; }.vl-calculator input[aria-invalid="true"] { border-color:#aa3200; }.vl-calculator dl>div { display:flex; justify-content:space-between; gap:20px; padding-block:20px; border-bottom:1px solid #dedbd2; font-size:13px; }.vl-calculator dd { font-weight:600; white-space:nowrap; }.vl-calculator dl>div:last-child { color:#3c4047; }.vl-calculator .vl-caption { font-size:11px!important; }
+.vl-about-mosaic { display:grid; grid-template-columns:1fr 1.6fr 1fr; gap:18px; align-items:center; }.vl-about-mosaic>img { width:100%; object-fit:cover; height:330px; border-radius:6px; }.vl-about-mosaic>img:nth-child(2) { height:420px; }.vl-about-story { display:grid; grid-template-columns:1fr 2fr; gap:60px; }.vl-about-story h2 { font-size:40px; letter-spacing:-.045em; line-height:1.2; font-weight:600; }.vl-about-story h2 span { color:#6a7180; }.vl-about-story>div>p { color:#64645f; font-size:15px; line-height:1.9; margin-top:25px; }.vl-about-story .voxel-text-link { margin-top:25px; }.vl-values { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:35px; padding-bottom:100px; }.vl-values article { padding-top:20px; border-top:1px solid #dedbd2; }.vl-values article>span { color:#a43a09; font-size:12px; }.vl-values h3 { font-size:22px; font-weight:600; letter-spacing:-.03em; margin-block:20px 12px; }.vl-values p { color:#64645f; font-size:14px; line-height:1.8; }
+@media (min-width:768px) and (max-width:1050px) { .voxel-header { gap:20px; }.voxel-header>a img { width:145px; }.voxel-nav { gap:19px; }.voxel-header-actions { gap:15px; }.voxel-hero { gap:35px; }.voxel-hero h1 { font-size:55px; }.vl-mini-product { left:-12px; }.vl-art-tag { right:-8px; bottom:-40px; }.vl-industry-strip p { gap:12px; font-size:12px; }.vl-editorial-grid,.vl-feature-story { gap:40px; }.vl-faq { gap:40px; }.vl-pricing-teaser { padding:35px; }.vl-pricing-teaser h2 { font-size:30px; }.vl-tools-grid article { padding:22px; }.vl-pricing-layout { gap:22px; }.vl-plan,.vl-calculator { padding:28px; }.vl-gallery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:767px) {
+ .voxel-header { min-height:76px; gap:16px; padding-block:16px 12px; }.voxel-nav { gap:0; justify-content:space-between; padding-top:2px; }.voxel-nav a { padding:8px 0 5px; }.voxel-header>a img { width:130px; }.voxel-header-actions { gap:12px; }.voxel-sign-in { font-size:11px; }
+ .voxel-hero { grid-template-columns:1fr; min-height:auto; padding-block:44px 60px; gap:48px; }.voxel-hero h1 { font-size:clamp(45px,10.2vw,65px); max-width:550px; }.voxel-hero-description { font-size:15px; }.vl-hero-note { font-size:10px; }.vl-hero-art { margin-left:12px; margin-right:4px; padding:20px 14px 60px 20px; }.vl-mini-product { left:-12px; }.vl-mini-product>img { width:65px; height:80px; }.vl-mini-product>div { font-size:10px; padding-right:0; }.vl-mini-product strong { font-size:13px; }.vl-art-tag { font-size:8px; bottom:-22px; right:0; padding:12px; }.vl-art-tag>span { font-size:25px; }
+ .vl-industry-strip .voxel-wrap { display:block; }.vl-industry-strip span { max-width:none; display:block; margin-bottom:15px; }.vl-industry-strip p { gap:11px; font-size:11px; }.vl-industry-strip b { font-size:16px; }
+ .vl-section-top { display:block; margin-bottom:28px; }.vl-section-top>.voxel-text-link,.vl-section-top>div+div,.vl-section-top>p { margin-top:24px; }.voxel-design-grid { gap:30px; }.voxel-design-image img { aspect-ratio:1.12; }
+ .vl-editorial { padding-block:35px; }.vl-editorial-grid { grid-template-columns:1fr; gap:35px; }.vl-editorial-photo>img { height:380px; }.vl-editorial-copy { padding-bottom:12px; }.vl-editorial-copy h2 { font-size:36px; }.vl-materials { margin-top:28px; }
+ .vl-tools-grid,.vl-steps,.vl-values { grid-template-columns:1fr; gap:24px; }.vl-tools-grid article { padding:28px; }.vl-tool-icon { margin-bottom:25px; }.vl-steps h3 { margin-top:15px; }.vl-pricing-teaser { padding:30px 25px; flex-direction:column; align-items:flex-start; }.vl-pricing-teaser h2 { font-size:30px; }.vl-price-stamp { min-width:200px; width:210px; align-self:center; }.vl-price-stamp strong { font-size:55px; }.vl-faq { grid-template-columns:1fr; gap:0; }.vl-faq summary { font-size:13px; }.vl-cta { padding:34px 26px; flex-direction:column; align-items:flex-start; margin-bottom:50px; gap:28px; }.vl-cta h2 { font-size:37px; }.vl-cta p:not(.voxel-eyebrow) { font-size:13px; }.vl-cta .voxel-button { padding:16px 20px; }
+ .vl-footer-top { grid-template-columns:1fr 1fr; gap:35px 20px; }.vl-footer-top>div { grid-column:1/-1; }.vl-footer-bottom { font-size:9px; }.vl-footer-bottom>span:nth-child(2) { display:none; }
+ .vl-page-heading { padding-block:50px 38px; }.vl-page-heading h1 { font-size:45px; }.vl-page-heading>p:last-child { font-size:15px; }.vl-gallery-controls { flex-direction:column; gap:16px; }.vl-select { justify-content:space-between; }.vl-gallery-grid { grid-template-columns:1fr; gap:35px; }.vl-gallery { padding-bottom:60px; }.vl-filter-tags { gap:7px; }.vl-filter-tags button { font-size:11px; padding:7px 12px; }
+ .vl-feature-story { grid-template-columns:1fr; gap:30px; padding-block:25px; }.vl-feature-story:nth-child(even)>div:first-child { order:0; }.vl-feature-photo>img { height:330px; }.vl-feature-story h2 { font-size:35px; }.vl-availability { padding:24px; margin-bottom:50px; }.vl-pricing-layout { grid-template-columns:1fr; gap:24px; }.vl-plan,.vl-calculator { padding:28px 24px; }.vl-calculator dl>div { font-size:12px; gap:14px; }.vl-about-mosaic { gap:9px; grid-template-columns:1fr 1.4fr; }.vl-about-mosaic>img { height:230px; }.vl-about-mosaic>img:nth-child(2) { height:290px; }.vl-about-mosaic>img:last-child { display:none; }.vl-about-story { grid-template-columns:1fr; gap:0; }.vl-about-story h2 { font-size:33px; }.vl-values { padding-bottom:60px; }
+}
+@media(prefers-reduced-motion:reduce) { .voxel-site *, .voxel-site *::before, .voxel-site *::after { scroll-behavior:auto; transition:none; animation:none; } }
+
+/* Light surfaces and orange accents; dark backgrounds match the Voxel Labs company site. */
+.voxel-site[data-theme="light"] { color-scheme:light; }
+.vl-theme-toggle { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:38px; height:38px; border:1px solid #cbc8c2; border-radius:50%; color:#45413b; background:transparent; cursor:pointer; }
+.vl-theme-toggle:hover { background:#e9e6e0; }
+.voxel-site[data-theme="dark"] { color-scheme:dark; --voxel-ink:#f1f2f3; --voxel-muted:#b5b7bb; --voxel-accent:#ff5b05; color:var(--voxel-ink); background:#0b0c0e; }
+.voxel-site[data-theme="dark"] .vl-header { background:#16171a; border-color:#31343b; }
+
+.voxel-site[data-theme="dark"] .voxel-nav a { color:#c2c4c8; }
+.voxel-site[data-theme="dark"] .voxel-nav a:hover,.voxel-site[data-theme="dark"] .voxel-nav a[aria-current="page"],.voxel-site[data-theme="dark"] .voxel-text-link:hover,.voxel-site[data-theme="dark"] .voxel-sign-in:hover { color:#ffad7d; }
+.voxel-site[data-theme="dark"] .voxel-eyebrow,.voxel-site[data-theme="dark"] .vl-hero-art .vl-art-label { color:#f1a77e; }
+.voxel-site[data-theme="dark"] .voxel-hero h1 .vl-orange { color:#ff7136; }
+.voxel-site[data-theme="dark"] .voxel-hero-description,.voxel-site[data-theme="dark"] .vl-hero-note,.voxel-site[data-theme="dark"] .voxel-section-heading>p,.voxel-site[data-theme="dark"] .vl-section-top>p,.voxel-site[data-theme="dark"] .vl-section-top>div>p:not(.voxel-eyebrow) { color:#b5b7bb; }
+.voxel-site[data-theme="dark"] .vl-hero-art { background-color:#282a2f; background-image:radial-gradient(#5c626f .8px,transparent .8px); }
+.voxel-site[data-theme="dark"] .voxel-preview-frame { border-color:#3f434c; background:#212328; }
+.voxel-site[data-theme="dark"] .voxel-preview-bar { background:#212328; color:#c7c9cc; border-color:#3f434c; }
+.voxel-site[data-theme="dark"] .voxel-preview-bar a { color:#fff; }
+.voxel-site[data-theme="dark"] .vl-mini-product { background:#23252a; border-color:#3f434c; }
+.voxel-site[data-theme="dark"] .vl-art-tag { background:#33373e; color:#e8e9ea; }
+.voxel-site[data-theme="dark"] .vl-art-tag>span { color:#babcbf; }
+.voxel-site[data-theme="dark"] .vl-industry-strip { border-color:#32353b; }
+.voxel-site[data-theme="dark"] .vl-industry-strip span,.voxel-site[data-theme="dark"] .voxel-design-caption p,.voxel-site[data-theme="dark"] .vl-caption { color:#a8abb0; }
+.voxel-site[data-theme="dark"] .voxel-design-image { background:#2c2f35; border-color:#3e424a; }
+.voxel-site[data-theme="dark"] .voxel-design-grid article:nth-child(2) .voxel-design-image { background:#2e3138; }
+.voxel-site[data-theme="dark"] .voxel-design-grid article:nth-child(3) .voxel-design-image { background:#2e3037; }
+.voxel-site[data-theme="dark"] .vl-tools-grid article { background:#282b31; }
+.voxel-site[data-theme="dark"] .vl-tools-grid article:nth-child(2) { background:#2b2e34; }
+.voxel-site[data-theme="dark"] .vl-tools-grid article:nth-child(3) { background:#3c2f27; }
+.voxel-site[data-theme="dark"] .vl-tools-grid p,.voxel-site[data-theme="dark"] .vl-tool-icon>span,.voxel-site[data-theme="dark"] .vl-steps p { color:#bbbdc1; }
+.voxel-site[data-theme="dark"] .vl-steps article,.voxel-site[data-theme="dark"] .vl-faq details,.voxel-site[data-theme="dark"] .vl-faq details:first-child { border-color:#3a3e46; }
+.voxel-site[data-theme="dark"] .vl-steps article>span { color:#ffa575; }
+.voxel-site[data-theme="dark"] .vl-pricing-teaser { background:#282a2f; }
+.voxel-site[data-theme="dark"] .vl-pricing-teaser p:not(.voxel-eyebrow),.voxel-site[data-theme="dark"] .vl-faq details>p { color:#bcbec2; }
+.voxel-site[data-theme="dark"] .vl-price-stamp { border-color:#505560; }
+.voxel-site[data-theme="dark"] .vl-cta { background:#e9ad8f; color:#17130f; }
+.voxel-site[data-theme="dark"] .vl-cta .voxel-eyebrow,.voxel-site[data-theme="dark"] .vl-cta p:not(.voxel-eyebrow) { color:#302016; }
+.voxel-site[data-theme="dark"] .vl-cta .voxel-button { background:#191715; color:#fff; }
+.voxel-site[data-theme="dark"] .vl-footer-top>div>p,.voxel-site[data-theme="dark"] .vl-footer nav a,.voxel-site[data-theme="dark"] .vl-footer-bottom,.voxel-site[data-theme="dark"] .vl-page-heading>p:last-child { color:#b3b5b9; }
+.voxel-site[data-theme="dark"] .vl-footer-bottom,.voxel-site[data-theme="dark"] .vl-gallery-controls { border-color:#3a3e46; }
+.voxel-site[data-theme="dark"] .vl-select,.voxel-site[data-theme="dark"] .vl-results,.voxel-site[data-theme="dark"] .vl-gallery-grid article>p,.voxel-site[data-theme="dark"] .vl-feature-story p:not(.voxel-eyebrow) { color:#b6b8bc; }
+.voxel-site[data-theme="dark"] .vl-select select,.voxel-site[data-theme="dark"] .vl-filter-tags button { background:#24262b; color:#ebebec; border-color:#464a53; }
+.voxel-site[data-theme="dark"] .vl-filter-tags button[aria-pressed="true"] { background:#c8c9cc; color:#1b1d20; }
+.voxel-site[data-theme="dark"] .vl-gallery-image { background:#282a2f; }
+.voxel-site[data-theme="dark"] .vl-gallery-grid .voxel-design-caption>span { background:#2e3137; color:#d4d5d8; }
+.voxel-site[data-theme="dark"] .vl-availability,.voxel-site[data-theme="dark"] .vl-plan { background:#26292e; border-color:#464a53; }
+.voxel-site[data-theme="dark"] .vl-availability p,.voxel-site[data-theme="dark"] .vl-plan-note,.voxel-site[data-theme="dark"] .voxel-price p { color:#bbbdc1; }
+.voxel-site[data-theme="dark"] .vl-pill { background:#3f434c; color:#e4e5e7; }
+.voxel-site[data-theme="dark"] .vl-calculator { background:#1e2023; border-color:#464a53; }
+.voxel-site[data-theme="dark"] .vl-calculator>p:not(.voxel-eyebrow) { color:#bbbdc1; }
+.voxel-site[data-theme="dark"] .vl-calculator input { background:#141518; color:white; border-color:#5b616e; }
+.voxel-site[data-theme="dark"] .vl-calculator dl>div { border-color:#3a3e46; }
+.voxel-site[data-theme="dark"] .vl-calculator dl>div:last-child,.voxel-site[data-theme="dark"] .vl-included svg { color:#babcbf; }
+.voxel-site[data-theme="dark"] .vl-about-story>div>p,.voxel-site[data-theme="dark"] .vl-values p { color:#b7b9bd; }
+.voxel-site[data-theme="dark"] .vl-about-story h2 span { color:#babcbf; }
+.voxel-site[data-theme="dark"] .vl-values article { border-color:#3a3e46; }
+.voxel-site[data-theme="dark"] .vl-values article>span { color:#ffa575; }
+.voxel-site[data-theme="dark"] .voxel-skip { background:#24262b; color:white; }
+.voxel-site[data-theme="dark"] .vl-theme-toggle { border-color:#505560; color:#e8e9ea; }
+.voxel-site[data-theme="dark"] .vl-theme-toggle:hover { background:#2b2e34; }
+@media(max-width:767px) { .voxel-header-actions { gap:9px; } .vl-theme-toggle { width:32px; height:32px; } .voxel-site[data-theme="dark"] .voxel-nav { border-color:#3a3e46; } }
+@media(max-width:370px) { .voxel-header { column-gap:8px; } .voxel-header>a img { width:110px; } .voxel-header-actions { gap:7px; } .voxel-header-actions .voxel-button { padding-inline:9px; } }
+
+/* Showcase previews sit directly on the page without a surrounding frame. */
+.voxel-site .voxel-design-grid .voxel-design-image { border:0; padding:0; background:transparent; }
+.voxel-site .voxel-design-grid .voxel-design-image img { border-radius:8px; box-shadow:none; }
+
+/* Illustrated product overview and connected launch journey. */
+.vl-toolkit,.vl-journey {
+ --graphic-paper:#fffefb; --graphic-ink:#25272c; --graphic-muted:#69707e;
+ --graphic-line:#d2d3d5; --graphic-neutral:#bec0c3; --graphic-peach:#e6b69a;
+}
+.vl-product-canvas { display:grid; grid-template-columns:1.08fr 1fr; gap:22px; }
+.vl-product-feature { border:1px solid #d8d9dc; border-radius:16px; overflow:hidden; background:#eaeaeb; min-width:0; }
+.vl-product-create { grid-row:span 2; display:flex; flex-direction:column; }
+.vl-product-manage,.vl-product-connect { display:grid; grid-template-columns:46% 54%; align-items:center; }
+.vl-product-manage { background:#e7e8e9; }.vl-product-connect { background:#f2e8df; }
+.vl-product-copy { padding:30px; position:relative; }
+.vl-product-create .vl-product-copy { padding:35px; margin-top:auto; }
+.vl-product-kicker { font-size:10px; letter-spacing:.13em; color:#5f6572; }
+.vl-product-copy h3 { font-size:25px; letter-spacing:-.04em; line-height:1.2; font-weight:600; margin-top:14px; }
+.vl-product-create h3 { font-size:32px; }
+.vl-product-copy p { font-size:13px; line-height:1.8; margin-top:14px; color:#595f6b; }
+.vl-product-copy>a { display:inline-flex; align-items:center; gap:16px; margin-top:24px; font-size:12px; font-weight:600; }
+.vl-product-copy>a:hover { color:#a6451a; }
+.vl-store-graphic { position:relative; padding:48px 30px 35px 70px; min-height:365px; background:radial-gradient(ellipse at 50% 50%,#c8cacd77,transparent 70%); }
+.vl-demo-window { background:var(--graphic-paper); border:1px solid var(--graphic-line); border-radius:9px; overflow:hidden; box-shadow:0 22px 42px #2e313814; transform:perspective(1100px) rotateY(-9deg) rotateZ(-3deg); color:var(--graphic-ink); }
+.vl-demo-bar { height:23px; display:flex; align-items:center; gap:4px; padding-inline:10px; border-bottom:1px solid var(--graphic-line); }.vl-demo-bar>span { width:4px; height:4px; border-radius:50%; background:#a7aaaf; }.vl-demo-bar i { display:block; height:6px; width:40%; margin-inline:auto; border-radius:3px; background:var(--graphic-line); }
+.vl-demo-brand { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:13px; font-size:7px; }.vl-demo-brand>b { letter-spacing:.1em; font-size:9px; }
+.vl-demo-store { display:grid; grid-template-columns:1fr 1fr; background:#e4e5e7; color:#2b2e33; }.vl-demo-store>div { display:flex; flex-direction:column; justify-content:center; padding:19px 13px; }.vl-demo-store>div>span { font-size:6px; letter-spacing:.1em; }.vl-demo-store strong { font-size:clamp(22px,2.4vw,34px); line-height:1.04; letter-spacing:-.05em; font-weight:500; margin-block:13px; }.vl-demo-store i { font-size:7px; font-style:normal; }.vl-demo-store>img { width:100%; height:185px; object-fit:cover; }
+.vl-demo-products { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:12px; }.vl-demo-products img { width:100%; height:63px; object-fit:cover; border-radius:3px; }
+.vl-editor-palette { position:absolute; top:100px; left:22px; z-index:1; padding:14px 10px; display:grid; justify-items:center; gap:12px; background:var(--graphic-paper); border:1px solid var(--graphic-line); border-radius:25px; color:var(--graphic-ink); box-shadow:0 10px 25px #2c2f3410; transform:rotate(-7deg); }.vl-editor-palette>span { width:16px; height:16px; border-radius:50%; background:#494e58; }.vl-editor-palette>span:nth-of-type(2) { background:#d8c7ae; }.vl-editor-palette>span:nth-of-type(3) { background:#cd7851; }
+.vl-cursor-tag { position:absolute; right:15px; bottom:12px; display:flex; align-items:flex-end; color:#a54a25; filter:drop-shadow(0 4px 6px #442e1a13); }.vl-cursor-tag>span { padding:6px 12px; background:#e7b79b; color:#3d291b; border-radius:12px 12px 12px 0; font-size:11px; transform:translate(-3px,15px); }
+.vl-catalog-graphic { position:relative; display:grid; align-items:center; min-height:260px; padding:32px 5px 30px 25px; }
+.vl-catalog-orbit { position:absolute; width:210px; height:210px; border:1px dashed #a1a4a9; border-radius:50%; left:5px; top:25px; }
+.vl-inventory-window { background:var(--graphic-paper); color:var(--graphic-ink); padding:15px; border:1px solid var(--graphic-line); border-radius:9px; box-shadow:0 15px 30px #23262b10; transform:rotate(-5deg); position:relative; }
+.vl-inventory-title { display:flex; align-items:center; gap:8px; padding-bottom:12px; font-size:11px; }.vl-inventory-title>svg:last-child { margin-left:auto; }
+.vl-inventory-row { display:flex; align-items:center; gap:8px; padding-block:8px; border-top:1px solid var(--graphic-line); }.vl-inventory-row>img { width:31px; height:31px; border-radius:5px; object-fit:cover; }.vl-inventory-row>span { flex:1; font-size:8px; }.vl-inventory-row i { display:block; margin-top:5px; height:3px; width:60%; background:var(--graphic-line); border-radius:3px; }.vl-inventory-row>svg { color:#5e6470; }
+.vl-graphic-badge { position:absolute; bottom:15px; left:40px; display:flex; align-items:center; gap:7px; padding:8px 12px; border:1px solid #a5a8ad; border-radius:7px; color:#32353c; background:#dadbdd; font-size:10px; transform:rotate(3deg); }
+.vl-customer-graphic { position:relative; height:250px; margin-left:8px; }
+.vl-customer-lines { position:absolute; top:25px; left:0; width:100%; height:175px; overflow:visible; }.vl-customer-lines path { stroke:#c9ab92; stroke-width:1.5; stroke-dasharray:4 5; }
+.vl-customer-hub { position:absolute; top:76px; left:50%; transform:translateX(-50%); width:85px; height:85px; border-radius:23px; background:var(--graphic-paper); border:1px solid #cfb59b; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; color:var(--graphic-ink); box-shadow:0 10px 24px #593c2410; }.vl-customer-hub span { font-size:10px; }
+.vl-person { position:absolute; width:39px; height:39px; border-radius:50%; display:grid; place-items:center; color:#5c4a3d; border:1px solid #cbb299; background:#ead4bd; }.vl-person-one { left:5%; top:44px; }.vl-person-two { right:3%; top:36px; background:#d2d3d6; }.vl-person-three { bottom:46px; left:3%; background:#d2d3d6; }.vl-person-four { right:3%; bottom:40px; }
+.vl-customer-note { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); white-space:nowrap; display:flex; align-items:center; gap:6px; font-size:9px; color:#6b5543; }
+.vl-journey { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:50px; position:relative; }
+.vl-journey::before { content:""; position:absolute; top:87px; left:14%; right:14%; height:1px; background:repeating-linear-gradient(90deg,#b7b9be 0 5px,transparent 5px 11px); }
+.vl-journey article { min-width:0; position:relative; }
+.vl-journey-graphic { position:relative; margin-inline:auto; width:185px; height:175px; display:grid; place-items:center; background:#faf9f6; }
+.vl-design-sheet { width:104px; height:113px; position:absolute; border-radius:8px; border:1px solid #b6b8bd; background:#ebebec; top:24px; left:35px; }.vl-sheet-back { transform:rotate(-15deg) translate(-12px,1px); background:#dbdcdf; }.vl-sheet-front { transform:rotate(6deg); padding:13px; color:#5c626e; box-shadow:0 12px 24px #2d30360b; }.vl-sheet-front>div { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px; }.vl-sheet-front i { height:19px; border:1px solid #babcbf; border-radius:3px; background:#d0d2d5; }.vl-sheet-front i:first-child { background:#9da0a5; }
+.vl-journey-symbol { position:absolute; right:17px; bottom:23px; width:35px; height:35px; border-radius:50%; display:grid; place-items:center; background:#5e6471; color:#fff; border:5px solid #faf9f6; }
+.vl-paint-sheet { width:116px; height:112px; padding:16px; background:#f1e7dd; border:1px solid #cfb59b; border-radius:8px; transform:rotate(-6deg); color:#967254; box-shadow:0 12px 24px #593c240b; }.vl-paint-sheet>div { display:flex; gap:8px; margin-block:10px; }.vl-paint-sheet i { width:16px; height:16px; border-radius:50%; background:#81858c; }.vl-paint-sheet i:nth-child(2) { background:#c99574; }.vl-paint-sheet i:nth-child(3) { background:#3a3e46; }.vl-paint-sheet>span { display:block; height:3px; background:#cbb6a0; border-radius:4px; margin-top:6px; }.vl-paint-sheet>span:last-child { width:60%; }
+.vl-paint-cursor { position:absolute; bottom:22px; right:23px; color:#af683e; stroke:#faf9f6; stroke-width:1px; }
+.vl-launch-ring { position:absolute; width:114px; height:114px; border-radius:50%; border:1px solid #b9bbbf; }.vl-ring-two { width:144px; height:144px; border-style:dashed; border-color:#cdced1; }.vl-journey-2>svg { color:#666d7b; transform:rotate(12deg); }.vl-open-tag { position:absolute; bottom:14px; display:flex; align-items:center; gap:7px; padding:8px 12px; border-radius:20px; background:var(--graphic-paper); border:1px solid #b9bbbf; color:#535964; font-size:10px; }.vl-open-tag>span { width:6px; height:6px; border-radius:50%; background:#6d7483; }
+.vl-journey-copy { padding-top:20px; }.vl-journey-number { display:block; color:#a95b31; font-size:11px; letter-spacing:.1em; margin-bottom:15px; }.vl-journey h3 { font-size:20px; font-weight:600; letter-spacing:-.035em; }.vl-journey p { margin-top:12px; font-size:13px; color:#5a606c; line-height:1.85; }
+.voxel-site[data-theme="dark"] .vl-toolkit,.voxel-site[data-theme="dark"] .vl-journey { --graphic-paper:#25272c; --graphic-ink:#dedfe1; --graphic-muted:#adafb4; --graphic-line:#464a53; }
+.voxel-site[data-theme="dark"] .vl-product-feature { border-color:#393d45; background:#202226; }.voxel-site[data-theme="dark"] .vl-product-manage { background:#24272c; }.voxel-site[data-theme="dark"] .vl-product-connect { background:#30281f; }
+.voxel-site[data-theme="dark"] .vl-product-copy p,.voxel-site[data-theme="dark"] .vl-product-kicker,.voxel-site[data-theme="dark"] .vl-journey p { color:#babcc0; }
+.voxel-site[data-theme="dark"] .vl-demo-store { background:#34373e; color:#ebebec; }
+.voxel-site[data-theme="dark"] .vl-graphic-badge { background:#393d44; color:#d8d9dc; border-color:#5c626f; }
+.voxel-site[data-theme="dark"] .vl-catalog-orbit { border-color:#5a606c; }.voxel-site[data-theme="dark"] .vl-customer-hub { border-color:#7b664f; }.voxel-site[data-theme="dark"] .vl-customer-note { color:#c9b29e; }
+.voxel-site[data-theme="dark"] .vl-journey-graphic { background:#0b0c0e; }.voxel-site[data-theme="dark"] .vl-journey-symbol { border-color:#0b0c0e; }.voxel-site[data-theme="dark"] .vl-paint-cursor { stroke:#0b0c0e; }.voxel-site[data-theme="dark"] .vl-open-tag { color:#c7c8cb; border-color:#5c626e; }.voxel-site[data-theme="dark"] .vl-journey-number { color:#e7a67b; }
+@media(min-width:768px) and (max-width:1050px) { .vl-product-manage,.vl-product-connect { grid-template-columns:1fr; }.vl-product-copy { padding:25px; }.vl-catalog-graphic { min-height:220px; padding:20px 40px; }.vl-catalog-orbit { left:22%; }.vl-inventory-window { max-width:230px; margin:auto; width:100%; }.vl-graphic-badge { bottom:3px; left:20%; }.vl-customer-graphic { height:210px; margin-inline:30px; }.vl-product-create { justify-content:center; }.vl-store-graphic { padding-left:50px; padding-right:15px; }.vl-editor-palette { left:5px; }.vl-demo-brand>span { display:none; }.vl-journey { gap:25px; } }
+@media(max-width:767px) { .vl-product-canvas { grid-template-columns:1fr; gap:20px; }.vl-product-create { grid-row:auto; }.vl-product-copy,.vl-product-create .vl-product-copy { padding:27px; }.vl-product-copy h3,.vl-product-create h3 { font-size:25px; }.vl-store-graphic { padding:35px 30px 35px 62px; min-height:325px; }.vl-demo-store strong { font-size:29px; }.vl-demo-store>img { height:160px; }.vl-editor-palette { left:13px; top:77px; }.vl-product-manage,.vl-product-connect { grid-template-columns:1fr; }.vl-catalog-graphic { min-height:235px; padding:22px 45px; }.vl-inventory-window { max-width:270px; margin:auto; width:100%; }.vl-catalog-orbit { left:calc(50% - 105px); }.vl-graphic-badge { left:calc(50% - 65px); bottom:5px; }.vl-customer-graphic { height:220px; max-width:320px; width:100%; margin:auto; }.vl-journey { grid-template-columns:1fr; gap:30px; }.vl-journey::before { display:none; }.vl-journey article { display:grid; grid-template-columns:125px 1fr; align-items:start; gap:20px; }.vl-journey-graphic { width:125px; height:155px; transform:scale(.85); transform-origin:top center; }.vl-design-sheet { left:13px; }.vl-journey-symbol { right:-4px; }.vl-paint-cursor { right:-4px; }.vl-journey-copy { padding-top:16px; }.vl-journey h3 { font-size:18px; }.vl-journey-number { margin-bottom:10px; }.vl-journey p { font-size:12px; } }
+@media(prefers-reduced-motion:no-preference) { .vl-demo-window,.vl-inventory-window { transition:transform .35s ease; }.vl-product-feature:hover .vl-demo-window { transform:perspective(1100px) rotateY(-3deg) rotateZ(-1deg) translateY(-3px); }.vl-product-feature:hover .vl-inventory-window { transform:rotate(-2deg) translateY(-3px); } }
+
+/* Give the About story's left column a clear editorial anchor. */
+.vl-about-manifesto { padding-right:15px; }
+.vl-about-statement { font-size:clamp(32px,3.5vw,48px); line-height:1.12; letter-spacing:-.055em; font-weight:600; }
+.vl-about-statement span { color:#c04b1c; }
+.vl-about-note { margin-top:24px; max-width:270px; color:#64645f; font-size:15px; line-height:1.8; }
+.voxel-site[data-theme="dark"] .vl-about-statement span { color:#ff9a65; }
+.voxel-site[data-theme="dark"] .vl-about-note { color:#b7b9bd; }
+@media(max-width:767px) { .vl-about-manifesto { padding-right:0; margin-bottom:38px; }.vl-about-statement { font-size:38px; }.vl-about-note { margin-top:18px; } }
+
+/* Shophub wordmark: crop the supplied asset to its orange symbol using CSS. */
+.shophub-brand { --brand-mark-height:40px; --brand-name-size:28px; display:inline-flex; align-items:center; gap:9px; color:#121315; vertical-align:middle; white-space:nowrap; line-height:1; }
+.shophub-brand-icon { display:block; flex-shrink:0; width:calc(var(--brand-mark-height) * .84); height:var(--brand-mark-height); background-image:url('/brand/voxel-labs-logo.png'); background-repeat:no-repeat; background-position:left center; background-size:auto var(--brand-mark-height); }
+.shophub-brand-copy { display:flex; flex-direction:column; gap:5px; }
+.shophub-brand-name { font-size:var(--brand-name-size); letter-spacing:-.055em; font-weight:700; }
+.shophub-brand-credit { font-size:10px; letter-spacing:.025em; font-weight:500; color:#62646b; }
+.shophub-brand-compact { --brand-mark-height:32px; --brand-name-size:23px; gap:7px; }
+.shophub-brand-compact .shophub-brand-credit { font-size:9px; }
+.voxel-site[data-theme="dark"] .shophub-brand { color:#ededf0; }
+.voxel-site[data-theme="dark"] .shophub-brand-credit { color:#b6b8bd; }
+@media(max-width:767px) { .voxel-header .shophub-brand { --brand-mark-height:32px; --brand-name-size:23px; gap:7px; }.voxel-header .shophub-brand-credit { font-size:9px; } }
+@media(max-width:370px) { .voxel-header .shophub-brand { --brand-mark-height:28px; --brand-name-size:20px; gap:6px; } }
+
+/* A warm, illustrated welcome alongside the account forms. */
+.voxel-account-story {
+ background:radial-gradient(ellipse at 90% 55%,#fff1df 0,transparent 62%),#f6d7bd;
+ border-right-color:#e4bd9d; padding:32px 48px; gap:28px; color:#2a211c;
+}
+.voxel-account-content { width:100%; max-width:520px; align-self:center; }
+.voxel-account-message { max-width:480px; }
+.voxel-account-message .voxel-eyebrow { color:#8b401e; margin-bottom:18px; font-size:11px; }
+.voxel-account-message h2 { font-size:clamp(38px,3.6vw,54px); }
+.voxel-account-message>p:not(.voxel-eyebrow) { color:#685042; max-width:430px; font-size:14px; margin-top:18px; }
+.voxel-account-message ul { gap:14px; margin-top:24px; }
+.voxel-account-message li { align-items:flex-start; gap:11px; }
+.voxel-account-message li>svg { margin-top:2px; color:#a24e27; }
+.voxel-account-message li>span { display:flex; flex-direction:column; gap:3px; }
+.voxel-account-message li strong { color:#382b23; font-weight:600; font-size:13px; }
+.voxel-account-message li>span>span { color:#6b5446; font-size:12px; line-height:1.6; }
+.voxel-account-graphic { --graphic-paper:#fffaf3; --graphic-ink:#382b23; --graphic-line:#e2cdb9; margin-top:14px; }
+.voxel-account-graphic .vl-store-graphic { min-height:0; padding:16px 36px 24px 65px; background:radial-gradient(ellipse at 50% 55%,#e6ad7f55,transparent 72%); }
+.voxel-account-graphic .vl-demo-window { transform:perspective(1100px) rotateY(-8deg) rotateZ(-3deg); box-shadow:0 18px 32px #8b51251a; }
+.voxel-account-graphic .vl-demo-brand { padding:10px 12px; }
+.voxel-account-graphic .vl-demo-store { background:#f1dfcb; color:#4b3221; }
+.voxel-account-graphic .vl-demo-store>img { height:112px; }
+.voxel-account-graphic .vl-demo-store>div { padding:12px; }
+.voxel-account-graphic .vl-demo-store strong { font-size:27px; margin-block:8px; }
+.voxel-account-graphic .vl-demo-products img { height:43px; }
+.voxel-account-graphic .vl-demo-products { padding:10px; }
+.voxel-account-graphic .vl-editor-palette { top:52px; left:24px; padding:12px 8px; gap:9px; }
+.voxel-account-graphic .vl-cursor-tag { right:20px; bottom:17px; }
+.voxel-account-caption { text-align:center; font-size:12px; color:#7d5439; margin-top:4px; }
+.voxel-account-story .voxel-company-link { color:#75513b; align-self:flex-start; }
+@media(min-width:1024px) { .voxel-account-story { position:relative; height:auto; min-height:100dvh; } }
+@media(min-width:1024px) and (max-height:820px) {
+ .voxel-account-story { padding:26px 36px; gap:22px; }
+ .voxel-account-message h2 { font-size:42px; }
+ .voxel-account-message ul { gap:10px; margin-top:18px; }
+ .voxel-account-graphic .vl-demo-products { display:none; }
+ .voxel-account-graphic .vl-store-graphic { padding-top:10px; padding-bottom:16px; }
+}

@@ -3,9 +3,9 @@ import "./globals.css";
 import "./voxel.css";
 
 export const metadata: Metadata = {
-  title: "Voxel Labs | Commerce",
+  title: "Shophub by Voxel Labs",
   description:
-    "Manage your online store, products, orders, and analytics from the Voxel Labs merchant dashboard.",
+    "Manage your online store, products, orders, and analytics from the Shophub merchant dashboard.",
 };
 
 export default function RootLayout({
