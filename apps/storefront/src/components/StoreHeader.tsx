@@ -45,7 +45,7 @@ function Search({ store, onDone }: { store: PublicStore; onDone: () => void }) {
 
   return (
     <div className="border-t border-store-line bg-store-bg">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8">
+      <div className="mx-auto store-content px-4 py-6 sm:px-8">
         <div className="mb-4 flex items-center justify-between"><p className="font-heading text-lg font-semibold">Find your next favourite</p><button type="button" onClick={onDone} aria-label="Close search" className="rounded-control p-2 hover:bg-store-surface"><X size={20} /></button></div>
         <label htmlFor="store-search" className="sr-only">Search products</label>
         <input
@@ -169,20 +169,20 @@ export default function StoreHeader({ store }: { store: PublicStore }) {
   return (
     <header style={style === "contrast" ? schemeStyle(store.theme, "inverse") : undefined} className="sticky top-0 z-30 border-b border-store-line bg-store-bg text-store-fg">
       {style === "department" ? <>
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-4 sm:px-8">
+        <div className="mx-auto flex h-20 store-content items-center justify-between gap-6 px-4 sm:px-8">
           {brand}
           <button type="button" aria-label="Search products" aria-expanded={searchOpen} onClick={() => setSearchOpen((value) => !value)} className="hidden w-full max-w-lg items-center justify-between rounded-control border border-store-line px-5 py-3 text-sm text-store-muted md:flex">Search products <MagnifyingGlass size={19} /></button>
           {actions}
         </div>
-        <div className="hidden border-t border-store-line px-8 py-4 md:block"><div className="mx-auto max-w-7xl">{nav}</div></div>
+        <div className="hidden border-t border-store-line px-8 py-4 md:block"><div className="mx-auto store-content">{nav}</div></div>
       </> : style === "premium" ? (
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-8 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4">
+        <div className="mx-auto flex h-[72px] store-content items-center justify-between gap-3 px-4 sm:px-8 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4">
           {nav}
           <div className="min-w-0 md:col-start-2">{brand}</div>
           <div className="shrink-0 justify-self-end md:col-start-3">{actions}</div>
         </div>
       ) : (
-        <div className={`mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 sm:px-8 ${style === "minimal" ? "h-16" : "h-20"}`}>
+        <div className={`mx-auto flex store-content items-center justify-between gap-6 px-4 sm:px-8 ${style === "minimal" ? "h-16" : "h-20"}`}>
           <div className="flex min-w-0 items-center gap-10">
             {brand}
             {style === "minimal" && nav}

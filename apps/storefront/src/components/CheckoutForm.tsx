@@ -155,7 +155,7 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
     );
   }
 
-  if (!cart.ready) return <div className="mx-auto h-96 max-w-5xl animate-pulse px-4 py-12 sm:px-8"><div className="h-full rounded-media bg-store-surface" /></div>;
+  if (!cart.ready) return <div className="mx-auto h-96 store-content animate-pulse px-4 py-12 sm:px-8"><div className="h-full rounded-media bg-store-surface" /></div>;
 
   if (account.loading) return <p role="status" className="px-4 py-16 text-center text-store-muted">Loading your account…</p>;
   if (account.error) return <div className="px-4 py-16 text-center"><p role="alert">{account.error}</p><button type="button" className="btn-secondary mt-4" onClick={() => void account.refresh()}>Try again</button></div>;
@@ -180,7 +180,7 @@ export default function CheckoutForm({ store }: { store: PublicStore }) {
   );
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-12 px-4 py-12 sm:px-8 lg:grid-cols-[1fr_380px]">
+    <div className="mx-auto grid store-content gap-12 px-4 py-12 sm:px-8 lg:grid-cols-[1fr_380px]">
       <form onSubmit={submit} className="flex flex-col gap-5">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Checkout</h1>
         <p className="text-sm text-store-muted">Signed in as <strong className="text-store-fg">{account.customer.email}</strong> · <Link href={`/${store.slug}/account`} className="underline">My account</Link></p>

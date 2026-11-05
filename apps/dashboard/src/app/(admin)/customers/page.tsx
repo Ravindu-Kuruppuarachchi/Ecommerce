@@ -24,7 +24,7 @@ export default function CustomersPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
+    <div className="mx-auto merchant-content px-4 py-8 sm:px-8">
       <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
       {data && (
         <p className="mt-1 text-sm text-gray-500">

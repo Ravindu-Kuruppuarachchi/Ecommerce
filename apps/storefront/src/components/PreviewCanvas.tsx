@@ -40,6 +40,15 @@ export default function PreviewCanvas({ store }: { store: PublicStore }) {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (parentOrigin.current) window.parent.postMessage({ type: "builder:element-change", ...detail }, parentOrigin.current);
+    };
+    window.addEventListener("builder:element-change", changed);
+    return () => window.removeEventListener("builder:element-change", changed);
+  }, []);
+
   // Refetch product lists only when the set of queries changes, not on every keystroke.
   const queryKey = useMemo(() => (sections ? productQueries(sections).map((q) => q.key).sort().join("|") : ""), [sections]);
   useEffect(() => {
@@ -78,7 +87,7 @@ export default function PreviewCanvas({ store }: { store: PublicStore }) {
   };
 
   if (!sections) {
-    return <div className="mx-auto max-w-7xl animate-pulse px-4 py-16 sm:px-8"><div className="h-[50dvh] rounded-media bg-store-surface" /></div>;
+    return <div className="mx-auto store-content animate-pulse px-4 py-16 sm:px-8"><div className="h-[50dvh] rounded-media bg-store-surface" /></div>;
   }
 
   return (

@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowSquareOut, ArrowUp, CaretLeft, CopySimple, Desktop, DeviceMobile, Plus, Trash } from "@phosphor-icons/react";
-import { pagePath, createSection, SECTIONS, type Section, type SectionType } from "@repo/core";
+import { pagePath, sectionButtons, validateSections, createSection, SECTIONS, type Section, type SectionType } from "@repo/core";
+import ThemeCard, { type Theme } from "@/components/editor/ThemeCard";
 import StorePagesPanel from "@/components/editor/StorePagesPanel";
 import { PageLinksContext, type EditorPage } from "@/components/editor/PageLinks";
 import FieldEditor, { IconButton } from "@/components/editor/FieldEditor";
-import { errorMessage, pageApi } from "@/lib/api-client";
+import { errorMessage, storeApi, pageApi } from "@/lib/api-client";
 import { STOREFRONT_URL, storefrontUrl } from "@/lib/urls";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -32,7 +33,9 @@ export default function PageEditor() {
 function Editor({ slug }: { slug: string }) {
   const router = useRouter();
   const [pages, setPages] = useState<EditorPage[]>([]);
-  const [panel, setPanel] = useState<"sections" | "pages">("sections");
+  const [panel, setPanel] = useState<"sections" | "pages" | "theme">("sections");
+  const [theme, setTheme] = useState<Theme | null>(null);
+  useEffect(() => { storeApi.getMe().then(res => setTheme(res.data.theme)).catch(err => setErrors([errorMessage(err, "Could not load theme")])); }, []);
   const switching = useRef(false);
   const editRevision = useRef(0);
   const saveInFlight = useRef(false);
@@ -47,6 +50,8 @@ function Editor({ slug }: { slug: string }) {
   const [title, setTitle] = useState("");
   const [sections, setSections] = useState<Section[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const undoStack = useRef<Section[][]>([]);
+  const redoStack = useRef<Section[][]>([]);
   const [adding, setAdding] = useState(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -85,6 +90,16 @@ function Editor({ slug }: { slug: string }) {
         setPreviewLoading(false);
         sendToPreview();
       }
+      if (e.data?.type === "builder:element-change") {
+        const { id, index, element } = e.data;
+        if (!Number.isInteger(index) || !sections) return;
+        const next = sections.map(section => {
+          if (section.id !== id || !Array.isArray(section.props.elements) || index < 0 || index >= section.props.elements.length) return section;
+          return { ...section, props: { ...section.props, elements: section.props.elements.map((value, i) => i === index ? element : value) } };
+        });
+        const result = validateSections(next);
+        if (result.ok) update(result.sections);
+      }
       if (e.data?.type === "builder:select" && typeof e.data.id === "string") setSelectedId(e.data.id);
     };
     window.addEventListener("message", onMessage);
@@ -97,11 +112,38 @@ function Editor({ slug }: { slug: string }) {
 
   // ---- Editing ----
   const update = (next: Section[]) => {
+    if (sections) undoStack.current = [...undoStack.current.slice(-49), structuredClone(sections)];
+    redoStack.current = [];
     editRevision.current++;
     setSections(next);
     setSaveState("dirty");
     setErrors([]);
     setNotice("");
+  };
+
+  const travelHistory = (redo: boolean) => {
+    const source = redo ? redoStack : undoStack;
+    const target = redo ? undoStack : redoStack;
+    const next = source.current.pop();
+    if (!next || !sections) return;
+    target.current.push(structuredClone(sections));
+    editRevision.current++;
+    setSections(next);
+    setSaveState("dirty");
+    setErrors([]);
+  };
+
+  const convertHero = (section: Section) => {
+    const p = section.props;
+    const elements: Record<string, unknown>[] = [];
+    if (p.image) elements.push({ kind: "image", image: p.image, text: p.imageAlt || "", x: 0, y: 0, width: 100, height: 100 });
+    elements.push({ kind: "panel", x: 0, y: 0, width: 100, height: 100, fill: "#000000", fillOpacity: 40, radius: 0 });
+    if (p.eyebrow) elements.push({ kind: "text", text: p.eyebrow, x: 7, y: 17, width: 80, height: 8, fontSize: 16, color: "#ffffff" });
+    elements.push({ kind: "text", text: p.heading || "Your headline", x: 7, y: 28, width: 75, height: 26, fontSize: 56, weight: "700", color: "#ffffff" });
+    if (p.subheading) elements.push({ kind: "text", text: p.subheading, x: 7, y: 57, width: 75, height: 16, fontSize: 20, color: "#ffffff" });
+    const buttons = sectionButtons(p);
+    buttons.slice(0,4).forEach((button, i) => elements.push({ kind: "button", text: button.label, link: button.link, x: 7 + i * 22, y: 80, width: 20, height: 10, fontSize: 16, fill: "#ff6a30", color: "#171717" }));
+    update(sections!.map(item => item.id === section.id ? { ...item, type: "canvas", props: { canvasHeight: 650, canvasColor: "#171717", elements: [...elements, ...(Array.isArray(p.elements) ? p.elements : [])].slice(0,30) } } : item));
   };
 
   const select = (id: string) => {
@@ -282,6 +324,8 @@ function Editor({ slug }: { slug: string }) {
           >
             <ArrowSquareOut size={18} />
           </a>
+          <button type="button" onClick={() => travelHistory(false)} disabled={!undoStack.current.length} className="btn-secondary px-3 py-2">Undo</button>
+          <button type="button" onClick={() => travelHistory(true)} disabled={!redoStack.current.length} className="btn-secondary px-3 py-2">Redo</button>
           <button type="button" onClick={save} disabled={saveState !== "dirty"} className="btn-secondary px-3 py-2">
             Save
           </button>
@@ -298,10 +342,12 @@ function Editor({ slug }: { slug: string }) {
         </select>
         <button type="button" aria-pressed={panel === "pages"} onClick={() => setPanel("pages")} className={`rounded px-3 py-1.5 text-xs font-medium ${panel === "pages" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700"}`}>Pages & navigation</button>
         <button type="button" aria-pressed={panel === "sections"} onClick={() => setPanel("sections")} className={`rounded px-3 py-1.5 text-xs font-medium ${panel === "sections" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700"}`}>Sections</button>
+        <button type="button" aria-pressed={panel === "theme"} onClick={() => setPanel("theme")} className={`rounded px-3 py-1.5 text-xs font-medium ${panel === "theme" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700"}`}>Theme</button>
+        <button type="button" onClick={() => { setPanel("sections"); add("canvas"); }} className="rounded bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-800">+ Freeform canvas</button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Side panel */}
-        <aside className="flex max-h-[45dvh] w-full shrink-0 flex-col border-b border-gray-200 bg-white md:max-h-none md:w-[340px] md:border-b-0 md:border-r">
+        <aside className="flex max-h-[45dvh] w-full shrink-0 flex-col border-b border-gray-200 bg-white md:max-h-none md:w-[40%] md:border-b-0 md:border-r">
           {(errors.length > 0 || notice) && (
             <div className={`m-3 rounded-lg border px-3 py-2 text-sm ${errors.length ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`} role="alert">
               {notice || (
@@ -312,13 +358,23 @@ function Editor({ slug }: { slug: string }) {
             </div>
           )}
 
-          {panel === "pages" ? <StorePagesPanel pages={pages} currentSlug={slug} onOpen={openPage} onRefresh={async () => { await refreshPages(); previewReady.current = false; setPreviewLoading(true); setPreviewVersion(value => value + 1); }} beforeCreate={async () => saveState === "saving" ? false : saveState === "dirty" ? save() : true} /> : selected ? (
+          {panel === "theme" ? <div className="flex-1 overflow-y-auto p-4">{theme ? <ThemeCard initial={theme} onSaved={() => { void storeApi.getMe().then(res => setTheme(res.data.theme)); previewReady.current = false; setPreviewLoading(true); setPreviewVersion(value => value + 1); }} /> : <p>Loading theme…</p>}</div> : panel === "pages" ? <StorePagesPanel pages={pages} currentSlug={slug} onOpen={openPage} onRefresh={async () => { await refreshPages(); previewReady.current = false; setPreviewLoading(true); setPreviewVersion(value => value + 1); }} beforeCreate={async () => saveState === "saving" ? false : saveState === "dirty" ? save() : true} /> : selected ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <button type="button" onClick={() => setSelectedId(null)} className="flex items-center gap-1 border-b border-gray-100 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
                 <CaretLeft size={14} /> All sections
               </button>
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 <h2 className="mb-4 text-sm font-semibold text-gray-900">{SECTIONS[selected.type].label}</h2>
+                {selected.type === "hero" && <button type="button" className="btn-secondary mb-4" onClick={() => convertHero(selected)}>Convert hero to freeform canvas</button>}
+                <div className="mb-5 rounded-lg border border-orange-200 bg-orange-50 p-3">
+                  <p className="mb-2 text-sm font-medium">Add an element</p>
+                  <div className="flex flex-wrap gap-2">{["text", "button", "panel", "image"].map(kind => <button key={kind} type="button" className="rounded border border-gray-200 bg-white px-3 py-2 text-sm capitalize" onClick={() => {
+                    const elements = Array.isArray(selected.props.elements) ? selected.props.elements : [];
+                    if (elements.length >= 30) return;
+                    update(sections.map(section => section.id === selected.id ? { ...section, props: { ...section.props, elements: [...elements, { kind, text: kind === "text" ? "Your next big idea" : kind === "button" ? "Shop now" : "", link: "/products", x: 10, y: 10, width: kind === "panel" ? 50 : 30, height: kind === "panel" ? 40 : 15, fontSize: 24, color: "#171717", fill: "#ffd9bd", fillOpacity: kind === "text" || kind === "image" ? 0 : 100, opacity: 100, radius: 8 }] } } : section));
+                  }}>+ {kind}</button>)}</div>
+                  <p className="mt-2 text-xs text-gray-600">Drag elements in the preview. Select one and drag its orange corner to resize. Use the element controls below for precise placement and styling.</p>
+                </div>
                 <FieldEditor
                   fields={SECTIONS[selected.type].fields}
                   values={{ ...SECTIONS[selected.type].defaults, ...selected.props }}
@@ -369,7 +425,7 @@ function Editor({ slug }: { slug: string }) {
         </aside>
 
         {/* Preview */}
-        <main className="relative flex min-h-0 flex-1 justify-center overflow-hidden p-0 md:p-4">
+        <main className="relative flex min-h-0 min-w-0 flex-1 justify-center overflow-hidden p-0 md:p-4">
           {previewLoading && <div className="absolute inset-0 z-10 bg-gray-100 p-6" role="status"><p className="mb-5 text-sm text-gray-500">Loading your storefront…</p><div className="h-12 animate-pulse rounded-lg bg-white" /><div className="mt-5 h-[55%] animate-pulse rounded-lg bg-white" /></div>}
           <iframe
             key={previewVersion}

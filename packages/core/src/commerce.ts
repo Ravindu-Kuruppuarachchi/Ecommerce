@@ -115,3 +115,15 @@ export function variantTitle(options: ProductOption[], values: Record<string, st
 
 export const MAX_OPTIONS = 3;
 export const MAX_VARIANTS = 100;
+
+/** Preserve variant identity through option renames; never duplicate stock across new combinations. */
+export function reconcileVariantRows<T extends { optionValues: Record<string, string> }>(previous: ProductOption[], next: ProductOption[], rows: T[], create: (values: Record<string, string>) => T): T[] {
+  const count = next.reduce((n, o) => n * o.values.length, 1);
+  if (count > MAX_VARIANTS) return rows;
+  const sameDimensions = previous.length === next.length;
+  const keyed = new Map(rows.map(row => [JSON.stringify(previous.map(o => row.optionValues[o.name])), row]));
+  return variantCombinations(next).map(values => {
+    const existing = sameDimensions ? keyed.get(JSON.stringify(next.map(o => values[o.name]))) : undefined;
+    return existing ? { ...existing, optionValues: values } : create(values);
+  });
+}

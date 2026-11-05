@@ -30,7 +30,7 @@ export default function ProductCatalog({ products, storeSlug, currency, quickAdd
     const selected = (active || "").toLowerCase() === (value || "").toLowerCase();
     return <Link key={value ?? "all-products"} href={`/${storeSlug}/products${value ? `?category=${encodeURIComponent(value)}` : ""}`} onClick={event => { if (localNavigation) { event.preventDefault(); setPreviewCategory(value); } }} aria-current={selected ? "page" : undefined} className={`shrink-0 border-b-2 px-1 py-3 text-sm transition-colors ${selected ? "border-store-fg font-semibold text-store-fg" : "border-transparent text-store-muted hover:text-store-fg"}`}>{label}</Link>;
   };
-  return <section className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-8 md:pt-16">
+  return <section className="mx-auto store-content px-4 pb-16 pt-10 sm:px-8 md:pt-16">
     <h1 className="font-heading text-4xl font-semibold leading-tight tracking-tight md:text-6xl">{fixedCategory ? (typeof props.heading === "string" ? props.heading : fixedCategory) : active ?? (typeof props.heading === "string" ? props.heading : "All products")}</h1>
     {typeof props.description === "string" && props.description && <p className="mt-4 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-store-muted md:text-base">{props.description}</p>}
     {!fixedCategory && props.showCategories !== false && categories.length > 1 && <nav data-demo-control="true" aria-label="Categories" className="mt-7 flex gap-6 overflow-x-auto border-b border-store-line">{link("All products")}{categories.map(value => link(value, value))}</nav>}

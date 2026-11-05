@@ -47,7 +47,7 @@ export default function ProductCard({ product, storeSlug, currency, quickAdd, ca
           </span>
           {onSale && <s className="ml-2 text-store-muted">{formatMoney(product.compareAtPriceCents!, currency)}</s>}
         </p>
-        {quickAdd && <AddToCartButton product={product} storeSlug={storeSlug} className="mt-auto pt-3" />}
+        {<AddToCartButton product={product} storeSlug={storeSlug} currency={currency} className="mt-auto pt-3" />}
       </div>
     </article>
   );

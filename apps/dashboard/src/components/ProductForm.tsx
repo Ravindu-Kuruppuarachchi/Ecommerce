@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Plus, Trash, UploadSimple, X } from "@phosphor-icons/react";
-import { MAX_OPTIONS, toMajorString, variantCombinations, variantTitle, type ProductOption } from "@repo/core";
+import { MAX_OPTIONS, MAX_VARIANTS, reconcileVariantRows, toMajorString, variantTitle, type ProductOption } from "@repo/core";
 import { errorMessage, storeApi, uploadImage } from "@/lib/api-client";
 
 export interface ProductRecord {
@@ -129,7 +129,7 @@ function OptionsEditor({ options, onChange }: { options: ProductOption[]; onChan
   useEffect(() => setDrafts((d) => options.map((_, i) => d[i] ?? "")), [options]);
 
   const addValue = (i: number) => {
-    const values = drafts[i].split(",").map((v) => v.trim()).filter(Boolean);
+    const values = (drafts[i] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
     if (!values.length) return;
     onChange(options.map((o, j) => (j === i ? { ...o, values: [...new Set([...o.values, ...values])] } : o)));
     setDrafts((d) => d.map((v, j) => (j === i ? "" : v)));
@@ -214,15 +214,17 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
     storeApi.modules().then((res) => setInventoryOn(res.data.modules.some((m: { key: string; enabled: boolean }) => m.key === "inventory" && m.enabled))).catch(() => setInventoryOn(false));
   }, []);
 
-  // Keep one variant row per combination, carrying over rows that still match.
-  const complete = options.filter((o) => o.name.trim() && o.values.length);
-  useEffect(() => {
-    setVariants((rows) => {
-      const byTitle = new Map(rows.map((r) => [variantTitle(complete, r.optionValues), r]));
-      return variantCombinations(complete).map((values) => byTitle.get(variantTitle(complete, values)) ?? { optionValues: values, price: "", sku: "", quantity: "0" });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(complete)]);
+  const complete = options.filter(o => o.name.trim() && o.values.length).map(o => ({ ...o, name: o.name.trim() }));
+  const lastComplete = useRef(complete);
+  const changeOptions = (next: ProductOption[]) => {
+    const ready = next.filter(o => o.name.trim() && o.values.length).map(o => ({ ...o, name: o.name.trim() }));
+    if (ready.length === next.length && ready.reduce((n, o) => n * o.values.length, 1) <= MAX_VARIANTS) {
+      const previous = lastComplete.current;
+      setVariants(rows => reconcileVariantRows(previous, ready, rows, optionValues => ({ optionValues, price: "", sku: "", quantity: "0" })));
+      lastComplete.current = ready;
+    }
+    setOptions(next);
+  };
 
   const hasVariants = complete.length > 0;
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -230,8 +232,12 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError("");
+    if (inventoryOn === null) { setError("Please wait for inventory settings to load."); return; }
+    if (inventoryOn && options.some(o => !o.name.trim() || !o.values.length)) { setError("Give every option a name and at least one value, or remove the empty option."); return; }
+    if (new Set(complete.map(o => o.name.toLowerCase())).size !== complete.length) { setError("Use a different name for each option."); return; }
+    if (complete.reduce((n, o) => n * o.values.length, 1) > MAX_VARIANTS) { setError(`Use fewer option values: a product supports up to ${MAX_VARIANTS} combinations.`); return; }
+    setSaving(true);
     try {
       await onSubmit({
         name: form.name,
@@ -270,7 +276,8 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         </div>
         <div>
           <label htmlFor="p-desc" className={label}>Description</label>
-          <textarea id="p-desc" rows={4} value={form.description} onChange={set("description")} className="input-field resize-y" />
+          <textarea id="p-desc" maxLength={10000} rows={8} value={form.description} onChange={set("description")} className="input-field resize-y font-mono" />
+          <details className="mt-2 text-sm text-gray-600"><summary className="cursor-pointer font-medium">Formatting guide: headings, tables and lists</summary><p className="my-2">Write plain text or Markdown. Descriptions appear below the product images and purchase controls.</p><pre className="overflow-x-auto rounded bg-gray-50 p-3 text-xs">{"## About this product\nDescribe your product with **bold** or *italic* text.\n\n### Specifications\n| Detail | Value |\n| --- | --- |\n| Size | Small |\n| Care | Easy |\n\n- First benefit\n- Second benefit"}</pre></details>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -321,7 +328,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         </div>
       </Section>
 
-      <Section title="Variants" description="Sell this product in different sizes, colours or other options, each with its own stock.">
+      <Section title="Variants" description="Use one option for each choice, such as Species with values Platy, Gourami. Stock and prices belong in the variant rows below. Multiple options create every combination.">
         {inventoryOn === null ? (
           <div className="h-10 animate-pulse rounded-lg bg-gray-100" />
         ) : !inventoryOn ? (
@@ -330,7 +337,8 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
           </p>
         ) : (
           <>
-            <OptionsEditor options={options} onChange={setOptions} />
+            <OptionsEditor options={options} onChange={changeOptions} />
+            <p className="text-xs text-gray-500">Renaming an option keeps its prices and stock. Adding or removing an option creates new combinations with zero stock; review each row before saving.</p>
             {hasVariants && (
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm">
@@ -363,7 +371,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
       </Section>
 
       <div className="flex flex-wrap items-center gap-3 p-6">
-        <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving…" : submitLabel}</button>
+        <button type="submit" disabled={saving || inventoryOn === null} className="btn-primary">{saving ? "Saving…" : submitLabel}</button>
         <Link href="/products" className="btn-secondary">Cancel</Link>
         {error && <p className="w-full text-sm text-red-600" role="alert">{error}</p>}
       </div>

@@ -88,7 +88,7 @@ export default function ProductPurchase({ product, store }: { product: Product; 
         </fieldset>
       ))}
 
-      <p className="mt-6 text-sm text-store-muted" aria-live="polite">
+      <p className={`mt-6 text-sm ${stock > 0 && stock < 10 ? "font-semibold text-red-500" : "text-store-muted"}`} aria-live="polite">
         {unavailable ? "This combination isn't available" : soldOut ? "Out of stock" : stock < 10 ? `Only ${stock} left` : "In stock"}
       </p>
 

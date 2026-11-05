@@ -10,3 +10,4 @@ export * from "./customer";
 
 export * from "./urls";
 export * from "./catalog";
+export * from "./description";

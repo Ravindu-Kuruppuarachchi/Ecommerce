@@ -6,6 +6,7 @@ import type { SectionContext } from "@/lib/types";
 import ProductCard from "../ProductCard";
 import NewsletterForm from "./NewsletterForm";
 import ProductCatalog from "./ProductCatalog";
+import FreeformElements from "./FreeformElements";
 import CampaignSlider from "./CampaignSlider";
 
 // Every section renders on the server for customers and in the browser for the
@@ -28,7 +29,7 @@ const list = (value: unknown): Props[] => (Array.isArray(value) ? value.filter((
 function PreviewHint({ ctx, children }: { ctx: SectionContext; children: ReactNode }) {
   if (!ctx.preview) return null;
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-8">
+    <div className="mx-auto store-content px-4 sm:px-8">
       <p className="rounded-media border border-dashed border-store-line px-6 py-10 text-center text-sm text-store-muted">{children}</p>
     </div>
   );
@@ -106,14 +107,14 @@ function Hero({ props, ctx }: { props: Props; ctx: SectionContext }) {
         {[image, text(props.secondaryImage) || image].map((src, i) => src ? <img key={i} src={src} alt={text(i === 0 ? props.imageAlt : props.secondaryImageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="h-full min-h-0 w-full object-cover" /> : <div key={i} />)}
       </div>
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-      <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 md:py-20">{copy}</div>
+      <div className="mx-auto w-full store-content px-5 py-14 sm:px-8 md:py-20">{copy}</div>
     </section>;
   }
 
   if (composed) {
     return (
       <section className={`hero-composed hero-${layout} ${height}`}>
-        <div className={`hero-composed-inner mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 sm:px-8 ${image ? "md:grid-cols-2" : "hero-no-image"} md:gap-14 md:py-16`}>
+        <div className={`hero-composed-inner mx-auto grid w-full store-content items-center gap-8 px-4 py-10 sm:px-8 ${image ? "md:grid-cols-2" : "hero-no-image"} md:gap-14 md:py-16`}>
           {copy}
           {image && <div className="hero-image overflow-hidden rounded-media bg-store-surface"><img src={image} alt={text(props.imageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="h-full w-full object-cover" /></div>}
         </div>
@@ -127,7 +128,7 @@ function Hero({ props, ctx }: { props: Props; ctx: SectionContext }) {
         <img src={image} alt={text(props.imageAlt)} style={{ objectPosition: IMAGE_FOCUS[text(props.imageFocus)] ?? "center" }} fetchPriority="high" className="absolute inset-0 -z-20 h-full w-full object-cover" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/70 via-black/45 to-black/10" />
       </>}
-      <div className={`mx-auto w-full max-w-7xl px-4 py-14 sm:px-8 md:py-20 ${centered ? "flex justify-center self-center" : ""}`}>{copy}</div>
+      <div className={`mx-auto w-full store-content px-4 py-14 sm:px-8 md:py-20 ${centered ? "flex justify-center self-center" : ""}`}>{copy}</div>
     </section>
   );
 }
@@ -153,7 +154,7 @@ function FeaturedProducts({ section, ctx }: { section: Section; ctx: SectionCont
   }
 
   return (
-    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
+    <section className="store-section mx-auto store-content px-4 py-16 sm:px-8">
       <div className={`flex flex-wrap items-baseline justify-between gap-4 ${props.headingStyle === "uppercase" ? "retail-heading" : ""}`}>
         <Heading>{heading}</Heading>
         <div className="mb-8 flex max-w-full flex-wrap gap-3">{sectionButtons({ ...SECTIONS["featured-products"].defaults, ...props }).filter(button => button.label && button.link).map((button, index) => <Link key={index} href={pageHref(ctx, button.link)} className={button.style === "secondary" ? "btn-secondary" : "btn-primary"}>{button.label}</Link>)}</div>
@@ -178,7 +179,7 @@ function CategoryGrid({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const cols = editorial && items.length === 2 ? "md:grid-cols-[1.3fr_1fr]" : ["", "md:grid-cols-1", "md:grid-cols-2", "md:grid-cols-3", "md:grid-cols-4"][Math.min(items.length, 4)];
 
   return (
-    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
+    <section className="store-section mx-auto store-content px-4 py-16 sm:px-8">
       <Heading>{text(props.heading)}</Heading>
       <div className={`grid grid-cols-2 gap-4 md:gap-6 ${cols}`}>
         {items.map((item, i) => {
@@ -220,7 +221,7 @@ function ImageWithText({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const showFrame = Boolean(image) || ctx.preview;
 
   return (
-    <section className={`mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-8 md:gap-16 ${showFrame ? "md:grid-cols-2" : ""}`}>
+    <section className={`mx-auto grid store-content items-center gap-10 px-4 py-16 sm:px-8 md:gap-16 ${showFrame ? "md:grid-cols-2" : ""}`}>
       {showFrame && (
         <div className={`aspect-square overflow-hidden rounded-media bg-store-surface ${imageRight ? "md:order-2" : ""}`}>
           {image ? (
@@ -245,7 +246,7 @@ function RichText({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const centered = props.align === "center";
 
   return (
-    <section className={`mx-auto max-w-3xl px-4 py-16 sm:px-8 ${centered ? "text-center" : ""}`}>
+    <section className={`mx-auto store-content px-4 py-16 sm:px-8 ${centered ? "text-center" : ""}`}>
       {heading && <h2 className="mb-5 font-heading text-3xl font-semibold tracking-tight">{heading}</h2>}
       {body && <Paragraphs body={body} className={centered ? "mx-auto max-w-[65ch]" : "max-w-[65ch]"} />}
     </section>
@@ -258,7 +259,7 @@ function Testimonials({ props, ctx }: { props: Props; ctx: SectionContext }) {
 
   return (
     <section className="py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-8">
+      <div className="mx-auto store-content px-4 sm:px-8">
         <Heading>{text(props.heading)}</Heading>
         <div className={`grid gap-10 ${items.length > 1 ? "md:grid-cols-2" : ""} ${items.length > 2 ? "lg:grid-cols-3" : ""}`}>
           {items.map((item, i) => (
@@ -275,7 +276,7 @@ function Testimonials({ props, ctx }: { props: Props; ctx: SectionContext }) {
 
 function Newsletter({ props, ctx }: { props: Props; ctx: SectionContext }) {
   return (
-    <section className="store-section mx-auto max-w-7xl px-4 py-16 sm:px-8">
+    <section className="store-section mx-auto store-content px-4 py-16 sm:px-8">
       <div className="grid gap-6 rounded-media border border-store-line p-8 md:grid-cols-2 md:items-center md:p-12">
         <div>
           <h2 className="font-heading text-3xl font-medium tracking-tight md:text-4xl">{text(props.heading, SECTIONS.newsletter.defaults.heading as string)}</h2>
@@ -291,7 +292,7 @@ function Faq({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const items = list(props.items).filter((i) => text(i.question));
   if (!items.length) return <PreviewHint ctx={ctx}>Add questions and answers.</PreviewHint>;
   return (
-    <section className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
+    <section className="mx-auto store-content px-4 py-16 sm:px-8">
       <Heading>{text(props.heading)}</Heading>
       <div className="divide-y divide-store-line border-y border-store-line">
         {items.map((item, i) => (
@@ -313,7 +314,7 @@ function SellingPoints({ props, ctx }: { props: Props; ctx: SectionContext }) {
   if (!items.length) return <PreviewHint ctx={ctx}>Add a few reasons to buy from you.</PreviewHint>;
   const cols = ["", "md:grid-cols-1", "md:grid-cols-2", "md:grid-cols-3", "md:grid-cols-4"][items.length];
   return (
-    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-8">
+    <section className="mx-auto store-content px-4 py-14 sm:px-8">
       <Heading>{text(props.heading)}</Heading>
       <div className={`grid gap-8 ${cols}`}>
         {items.map((item, i) => (
@@ -333,7 +334,7 @@ function PromoTiles({ props, ctx }: { props: Props; ctx: SectionContext }) {
   // The first tile is larger when there are three, so the row doesn't read as three equal cards.
   const layout = items.length === 3 ? "md:grid-cols-[1.4fr_1fr_1fr]" : items.length === 2 ? "md:grid-cols-2" : "";
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
+    <section className="mx-auto store-content px-4 py-12 sm:px-8">
       <div className={`grid gap-4 ${layout}`}>
         {items.map((item, i) => {
           const image = text(item.image);
@@ -364,7 +365,7 @@ function LinkStrip({ props, ctx }: { props: Props; ctx: SectionContext }) {
   const items = list(props.items).filter((item) => text(item.label));
   if (!items.length) return <PreviewHint ctx={ctx}>Add collection shortcuts.</PreviewHint>;
   return <nav aria-label={text(props.heading, "Collection shortcuts")} className="border-y border-store-line px-4 py-5 sm:px-8">
-    <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-4">
+    <div className="mx-auto flex store-content flex-wrap items-center justify-center gap-x-8 gap-y-4">
       {text(props.heading) && <p className="text-xs font-semibold uppercase tracking-widest text-store-muted">{text(props.heading)}</p>}
       {items.map((item, i) => <Link key={i} href={pageHref(ctx, text(item.link))} className="border-b border-transparent py-1 text-sm font-semibold uppercase tracking-wide hover:border-store-fg">{text(item.label)}</Link>)}
     </div>
@@ -380,6 +381,7 @@ function SectionView({ section, ctx }: { section: Section; ctx: SectionContext }
       }));
       return slides.length ? <CampaignSlider slides={slides} storeSlug={ctx.store.slug} label={text(props.label, "Latest collections")} full={props.height === "full"} layout={text(props.layout, "split")} /> : <PreviewHint ctx={ctx}>Add your first campaign.</PreviewHint>;
     }
+    case "canvas": return <div style={{ height: Number(props.canvasHeight) || 600, background: typeof props.canvasColor === "string" ? props.canvasColor : "#fff3e8" }} />;
     case "link-strip": return <LinkStrip props={props} ctx={ctx} />;
     case "announcement":
       return <Announcement props={props} ctx={ctx} />;
@@ -422,10 +424,11 @@ export default function Sections({ sections, ctx, selectedId }: { sections: Sect
           <div
             key={section.id}
             data-section-id={section.id}
-            style={schemeStyle(ctx.store.theme, scheme)}
+            style={{ ...schemeStyle(ctx.store.theme, scheme), position: "relative", containerType: "inline-size" }}
             className={`${scheme === "default" ? "" : "bg-store-bg text-store-fg"} ${preview}`}
           >
             <SectionView section={section} ctx={ctx} />
+            <FreeformElements section={section} storeSlug={ctx.store.slug} preview={ctx.preview} />
           </div>
         );
       })}

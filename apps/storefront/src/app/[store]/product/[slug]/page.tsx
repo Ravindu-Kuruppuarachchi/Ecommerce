@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductGallery from "@/components/ProductGallery";
+import ProductDescription from "@/components/ProductDescription";
 import ProductPurchase from "@/components/ProductPurchase";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getStore } from "@/lib/api";
@@ -29,7 +30,7 @@ export default async function ProductPage({ params: pendingParams }: Params) {
 
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
+    <div className="mx-auto store-content px-4 py-10 sm:px-8">
       <nav aria-label="Breadcrumb" className="mb-8 text-sm text-store-muted">
         <Link href={`/${store.slug}/products`} className="hover:text-store-fg">Shop</Link>
         {product.category && (
@@ -48,15 +49,11 @@ export default async function ProductPage({ params: pendingParams }: Params) {
         <div className="self-start md:sticky md:top-28 md:pt-4">
           <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{product.name}</h1>
           <ProductPurchase key={product.id} product={product} store={store} />
-          {product.description && (
-            <div className="mt-10 max-w-[60ch] space-y-4 leading-relaxed text-store-muted">
-              {product.description.split(/\n\s*\n/).map((p, i) => (
-                <p key={i} className="whitespace-pre-line">{p}</p>
-              ))}
-            </div>
-          )}
+
         </div>
       </div>
+
+      {product.description && <ProductDescription text={product.description} />}
 
       {relatedProducts.length > 0 && (
         <section className="mt-24">

@@ -7,7 +7,7 @@
   "types": "src/index.ts",
   "scripts": {
     "type-check": "tsc --noEmit",
-    "test": "node --import tsx tests/templates.test.ts"
+    "test": "node --import tsx tests/templates.test.ts && node --import tsx tests/canvas.test.ts && node --import tsx tests/product-content.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

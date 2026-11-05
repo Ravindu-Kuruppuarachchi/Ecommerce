@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
   const visitors = data?.funnel[0]?.sessions ?? 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
+    <div className="mx-auto merchant-content px-4 py-8 sm:px-8">
       <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
 
       {/* Filters: one row, above everything they scope. */}

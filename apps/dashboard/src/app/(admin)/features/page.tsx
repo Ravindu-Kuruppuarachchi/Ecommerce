@@ -40,7 +40,7 @@ export default function FeaturesPage() {
   const included = modules?.filter((m) => m.core) ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
+    <div className="mx-auto merchant-content px-4 py-8 sm:px-8">
       <h1 className="text-2xl font-bold text-gray-900">Features</h1>
       <p className="mt-1 text-sm text-gray-500">Turn on the tools you need. Your admin menu only shows what&apos;s on.</p>
       {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p>}

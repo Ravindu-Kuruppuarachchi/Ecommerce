@@ -130,7 +130,7 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
+    <div className="mx-auto merchant-content px-4 py-8 sm:px-8">
       <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
       <p className="mt-1 text-sm text-gray-500">Stock for every product and variant. Changes are logged below.</p>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

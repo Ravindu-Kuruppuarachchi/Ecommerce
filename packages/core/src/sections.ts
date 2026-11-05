@@ -16,6 +16,7 @@ export type FieldDefinition =
   | { kind: "list"; name: string; label: string; maxItems: number; fields: FieldDefinition[] };
 
 export type SectionType =
+  | "canvas"
   | "campaign-slider"
   | "link-strip"
   | "announcement"
@@ -59,7 +60,32 @@ const BUTTONS_FIELD: FieldDefinition = { kind: "list", name: "buttons", label: "
   { kind: "select", name: "style", label: "Button style", options: ["primary", "secondary"] },
 ] };
 
+export const CANVAS_FIELDS: FieldDefinition[] = [
+  { kind: "number", name: "canvasHeight", label: "Canvas height (px)", min: 200, max: 1600 },
+  { kind: "color", name: "canvasColor", label: "Canvas background" },
+  { kind: "list", name: "elements", label: "Elements (last is on top)", maxItems: 30, fields: [
+    { kind: "select", name: "kind", label: "Element", options: ["text", "button", "panel", "image"] },
+    { kind: "textarea", name: "text", label: "Text", maxLength: 2000 },
+    { kind: "url", name: "link", label: "Button destination" },
+    { kind: "image", name: "image", label: "Image" },
+    { kind: "select", name: "font", label: "Font", options: ["inherit", "Arial", "Georgia", "Verdana", "Courier New"] },
+    { kind: "number", name: "fontSize", label: "Font size (px)", min: 8, max: 160 },
+    { kind: "select", name: "weight", label: "Weight", options: ["400", "500", "600", "700", "800"] },
+    { kind: "select", name: "align", label: "Text alignment", options: ["left", "center", "right"] },
+    { kind: "color", name: "color", label: "Text colour" },
+    { kind: "color", name: "fill", label: "Fill colour" },
+    { kind: "number", name: "fillOpacity", label: "Fill opacity (%)", min: 0, max: 100 },
+    { kind: "number", name: "opacity", label: "Element opacity (%)", min: 0, max: 100 },
+    { kind: "number", name: "radius", label: "Corner radius (px)", min: 0, max: 200 },
+    { kind: "number", name: "x", label: "Horizontal position (%)", min: 0, max: 99 },
+    { kind: "number", name: "y", label: "Vertical position (%)", min: 0, max: 99 },
+    { kind: "number", name: "width", label: "Width (%)", min: 1, max: 100 },
+    { kind: "number", name: "height", label: "Height (%)", min: 1, max: 100 },
+  ] },
+];
+
 export const SECTIONS: Record<SectionType, SectionDefinition> = {
+  canvas: { type: "canvas", label: "Freeform canvas", fields: CANVAS_FIELDS, defaults: { canvasHeight: 600, canvasColor: "#fff3e8", elements: [] } },
   "campaign-slider": {
     type: "campaign-slider", label: "Campaign slideshow",
     fields: [
@@ -316,6 +342,10 @@ export const SECTIONS: Record<SectionType, SectionDefinition> = {
     defaults: { items: [] },
   },
 };
+
+for (const definition of Object.values(SECTIONS)) {
+  if (definition.type !== "canvas") definition.fields.push(CANVAS_FIELDS[2]);
+}
 
 export function isSectionType(value: unknown): value is SectionType {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(SECTIONS, value);
